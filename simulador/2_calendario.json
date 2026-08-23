@@ -1,0 +1,662 @@
+[
+  {
+    "id": 1,
+    "jornada": 1,
+    "fecha": "2026-08-10",
+    "equipo_local": "Huevos FC",
+    "equipo_visitante": "Equipo 12",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 2,
+    "jornada": 1,
+    "fecha": "2026-08-10",
+    "equipo_local": "Equipo 2",
+    "equipo_visitante": "Equipo 11",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 3,
+    "jornada": 1,
+    "fecha": "2026-08-10",
+    "equipo_local": "Equipo 3",
+    "equipo_visitante": "Equipo 10",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 4,
+    "jornada": 1,
+    "fecha": "2026-08-10",
+    "equipo_local": "Equipo 4",
+    "equipo_visitante": "Equipo 9",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 5,
+    "jornada": 1,
+    "fecha": "2026-08-10",
+    "equipo_local": "Equipo 5",
+    "equipo_visitante": "Equipo 8",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 6,
+    "jornada": 1,
+    "fecha": "2026-08-10",
+    "equipo_local": "Equipo 6",
+    "equipo_visitante": "Equipo 7",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 7,
+    "jornada": 2,
+    "fecha": "2026-08-17",
+    "equipo_local": "Equipo 11",
+    "equipo_visitante": "Huevos FC",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 8,
+    "jornada": 2,
+    "fecha": "2026-08-17",
+    "equipo_local": "Equipo 10",
+    "equipo_visitante": "Equipo 12",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 9,
+    "jornada": 2,
+    "fecha": "2026-08-17",
+    "equipo_local": "Equipo 9",
+    "equipo_visitante": "Equipo 2",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 10,
+    "jornada": 2,
+    "fecha": "2026-08-17",
+    "equipo_local": "Equipo 8",
+    "equipo_visitante": "Equipo 3",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 11,
+    "jornada": 2,
+    "fecha": "2026-08-17",
+    "equipo_local": "Equipo 7",
+    "equipo_visitante": "Equipo 4",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 12,
+    "jornada": 2,
+    "fecha": "2026-08-17",
+    "equipo_local": "Equipo 6",
+    "equipo_visitante": "Equipo 5",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 13,
+    "jornada": 3,
+    "fecha": "2026-08-24",
+    "equipo_local": "Huevos FC",
+    "equipo_visitante": "Equipo 10",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 14,
+    "jornada": 3,
+    "fecha": "2026-08-24",
+    "equipo_local": "Equipo 11",
+    "equipo_visitante": "Equipo 9",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 15,
+    "jornada": 3,
+    "fecha": "2026-08-24",
+    "equipo_local": "Equipo 12",
+    "equipo_visitante": "Equipo 8",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 16,
+    "jornada": 3,
+    "fecha": "2026-08-24",
+    "equipo_local": "Equipo 2",
+    "equipo_visitante": "Equipo 7",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 17,
+    "jornada": 3,
+    "fecha": "2026-08-24",
+    "equipo_local": "Equipo 3",
+    "equipo_visitante": "Equipo 6",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 18,
+    "jornada": 3,
+    "fecha": "2026-08-24",
+    "equipo_local": "Equipo 4",
+    "equipo_visitante": "Equipo 5",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 19,
+    "jornada": 4,
+    "fecha": "2026-08-31",
+    "equipo_local": "Equipo 9",
+    "equipo_visitante": "Huevos FC",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 20,
+    "jornada": 4,
+    "fecha": "2026-08-31",
+    "equipo_local": "Equipo 8",
+    "equipo_visitante": "Equipo 10",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 21,
+    "jornada": 4,
+    "fecha": "2026-08-31",
+    "equipo_local": "Equipo 7",
+    "equipo_visitante": "Equipo 11",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 22,
+    "jornada": 4,
+    "fecha": "2026-08-31",
+    "equipo_local": "Equipo 6",
+    "equipo_visitante": "Equipo 12",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 23,
+    "jornada": 4,
+    "fecha": "2026-08-31",
+    "equipo_local": "Equipo 5",
+    "equipo_visitante": "Equipo 2",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 24,
+    "jornada": 4,
+    "fecha": "2026-08-31",
+    "equipo_local": "Equipo 4",
+    "equipo_visitante": "Equipo 3",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 25,
+    "jornada": 5,
+    "fecha": "2026-09-07",
+    "equipo_local": "Huevos FC",
+    "equipo_visitante": "Equipo 8",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 26,
+    "jornada": 5,
+    "fecha": "2026-09-07",
+    "equipo_local": "Equipo 9",
+    "equipo_visitante": "Equipo 7",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 27,
+    "jornada": 5,
+    "fecha": "2026-09-07",
+    "equipo_local": "Equipo 10",
+    "equipo_visitante": "Equipo 6",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 28,
+    "jornada": 5,
+    "fecha": "2026-09-07",
+    "equipo_local": "Equipo 11",
+    "equipo_visitante": "Equipo 5",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 29,
+    "jornada": 5,
+    "fecha": "2026-09-07",
+    "equipo_local": "Equipo 12",
+    "equipo_visitante": "Equipo 4",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 30,
+    "jornada": 5,
+    "fecha": "2026-09-07",
+    "equipo_local": "Equipo 2",
+    "equipo_visitante": "Equipo 3",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 31,
+    "jornada": 6,
+    "fecha": "2026-09-14",
+    "equipo_local": "Equipo 7",
+    "equipo_visitante": "Huevos FC",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 32,
+    "jornada": 6,
+    "fecha": "2026-09-14",
+    "equipo_local": "Equipo 6",
+    "equipo_visitante": "Equipo 8",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 33,
+    "jornada": 6,
+    "fecha": "2026-09-14",
+    "equipo_local": "Equipo 5",
+    "equipo_visitante": "Equipo 9",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 34,
+    "jornada": 6,
+    "fecha": "2026-09-14",
+    "equipo_local": "Equipo 4",
+    "equipo_visitante": "Equipo 10",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 35,
+    "jornada": 6,
+    "fecha": "2026-09-14",
+    "equipo_local": "Equipo 3",
+    "equipo_visitante": "Equipo 11",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 36,
+    "jornada": 6,
+    "fecha": "2026-09-14",
+    "equipo_local": "Equipo 2",
+    "equipo_visitante": "Equipo 12",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 37,
+    "jornada": 7,
+    "fecha": "2026-09-21",
+    "equipo_local": "Huevos FC",
+    "equipo_visitante": "Equipo 6",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 38,
+    "jornada": 7,
+    "fecha": "2026-09-21",
+    "equipo_local": "Equipo 7",
+    "equipo_visitante": "Equipo 5",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 39,
+    "jornada": 7,
+    "fecha": "2026-09-21",
+    "equipo_local": "Equipo 8",
+    "equipo_visitante": "Equipo 4",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 40,
+    "jornada": 7,
+    "fecha": "2026-09-21",
+    "equipo_local": "Equipo 9",
+    "equipo_visitante": "Equipo 3",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 41,
+    "jornada": 7,
+    "fecha": "2026-09-21",
+    "equipo_local": "Equipo 10",
+    "equipo_visitante": "Equipo 2",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 42,
+    "jornada": 7,
+    "fecha": "2026-09-21",
+    "equipo_local": "Equipo 11",
+    "equipo_visitante": "Equipo 12",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 43,
+    "jornada": 8,
+    "fecha": "2026-09-28",
+    "equipo_local": "Equipo 5",
+    "equipo_visitante": "Huevos FC",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 44,
+    "jornada": 8,
+    "fecha": "2026-09-28",
+    "equipo_local": "Equipo 4",
+    "equipo_visitante": "Equipo 6",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 45,
+    "jornada": 8,
+    "fecha": "2026-09-28",
+    "equipo_local": "Equipo 3",
+    "equipo_visitante": "Equipo 7",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 46,
+    "jornada": 8,
+    "fecha": "2026-09-28",
+    "equipo_local": "Equipo 2",
+    "equipo_visitante": "Equipo 8",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 47,
+    "jornada": 8,
+    "fecha": "2026-09-28",
+    "equipo_local": "Equipo 12",
+    "equipo_visitante": "Equipo 9",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 48,
+    "jornada": 8,
+    "fecha": "2026-09-28",
+    "equipo_local": "Equipo 11",
+    "equipo_visitante": "Equipo 10",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 49,
+    "jornada": 9,
+    "fecha": "2026-10-05",
+    "equipo_local": "Huevos FC",
+    "equipo_visitante": "Equipo 4",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 50,
+    "jornada": 9,
+    "fecha": "2026-10-05",
+    "equipo_local": "Equipo 5",
+    "equipo_visitante": "Equipo 3",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 51,
+    "jornada": 9,
+    "fecha": "2026-10-05",
+    "equipo_local": "Equipo 6",
+    "equipo_visitante": "Equipo 2",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 52,
+    "jornada": 9,
+    "fecha": "2026-10-05",
+    "equipo_local": "Equipo 7",
+    "equipo_visitante": "Equipo 12",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 53,
+    "jornada": 9,
+    "fecha": "2026-10-05",
+    "equipo_local": "Equipo 8",
+    "equipo_visitante": "Equipo 11",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 54,
+    "jornada": 9,
+    "fecha": "2026-10-05",
+    "equipo_local": "Equipo 9",
+    "equipo_visitante": "Equipo 10",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 55,
+    "jornada": 10,
+    "fecha": "2026-10-12",
+    "equipo_local": "Equipo 3",
+    "equipo_visitante": "Huevos FC",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 56,
+    "jornada": 10,
+    "fecha": "2026-10-12",
+    "equipo_local": "Equipo 2",
+    "equipo_visitante": "Equipo 4",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 57,
+    "jornada": 10,
+    "fecha": "2026-10-12",
+    "equipo_local": "Equipo 12",
+    "equipo_visitante": "Equipo 5",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 58,
+    "jornada": 10,
+    "fecha": "2026-10-12",
+    "equipo_local": "Equipo 11",
+    "equipo_visitante": "Equipo 6",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 59,
+    "jornada": 10,
+    "fecha": "2026-10-12",
+    "equipo_local": "Equipo 10",
+    "equipo_visitante": "Equipo 7",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 60,
+    "jornada": 10,
+    "fecha": "2026-10-12",
+    "equipo_local": "Equipo 9",
+    "equipo_visitante": "Equipo 8",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 61,
+    "jornada": 11,
+    "fecha": "2026-10-19",
+    "equipo_local": "Huevos FC",
+    "equipo_visitante": "Equipo 2",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 62,
+    "jornada": 11,
+    "fecha": "2026-10-19",
+    "equipo_local": "Equipo 3",
+    "equipo_visitante": "Equipo 12",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 63,
+    "jornada": 11,
+    "fecha": "2026-10-19",
+    "equipo_local": "Equipo 4",
+    "equipo_visitante": "Equipo 11",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 64,
+    "jornada": 11,
+    "fecha": "2026-10-19",
+    "equipo_local": "Equipo 5",
+    "equipo_visitante": "Equipo 10",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 65,
+    "jornada": 11,
+    "fecha": "2026-10-19",
+    "equipo_local": "Equipo 6",
+    "equipo_visitante": "Equipo 9",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  },
+  {
+    "id": 66,
+    "jornada": 11,
+    "fecha": "2026-10-19",
+    "equipo_local": "Equipo 7",
+    "equipo_visitante": "Equipo 8",
+    "resultado": null,
+    "ganador": null,
+    "jugado": false
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "equipos": [
+    { "id": 1, "nombre": "Huevos FC" },
+    { "id": 2, "nombre": "Equipo 2" },
+    { "id": 3, "nombre": "Equipo 3" },
+    { "id": 4, "nombre": "Equipo 4" },
+    { "id": 5, "nombre": "Equipo 5" },
+    { "id": 6, "nombre": "Equipo 6" },
+    { "id": 7, "nombre": "Equipo 7" },
+    { "id": 8, "nombre": "Equipo 8" },
+    { "id": 9, "nombre": "Equipo 9" },
+    { "id": 10, "nombre": "Equipo 10" },
+    { "id": 11, "nombre": "Equipo 11" },
+    { "id": 12, "nombre": "Equipo 12" }
+  ]
+}

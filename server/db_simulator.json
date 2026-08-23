@@ -1,0 +1,1559 @@
+{
+  "temporada": "2026/2027",
+  "equipos": [
+    "Equipo 1",
+    "Equipo 2",
+    "Equipo 3",
+    "Equipo 4",
+    "Equipo 5",
+    "Equipo 6",
+    "Equipo 7",
+    "Equipo 8",
+    "Equipo 9",
+    "Equipo 10",
+    "Equipo 11",
+    "Equipo 12"
+  ],
+  "total_equipos": 12,
+  "formato": "doble vuelta (ida y vuelta)",
+  "total_jornadas": 22,
+  "jornadas_simuladas": 12,
+  "partidos": [
+    {
+      "id": 1,
+      "jornada": 1,
+      "fecha": "2026-08-15",
+      "equipo_local": "Equipo 1",
+      "equipo_visitante": "Equipo 12",
+      "resultado": {
+        "goles_local": 2,
+        "goles_visitante": 0
+      },
+      "ganador": "Equipo 1",
+      "jugado": true
+    },
+    {
+      "id": 2,
+      "jornada": 1,
+      "fecha": "2026-08-15",
+      "equipo_local": "Equipo 2",
+      "equipo_visitante": "Equipo 11",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 1
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 3,
+      "jornada": 1,
+      "fecha": "2026-08-15",
+      "equipo_local": "Equipo 3",
+      "equipo_visitante": "Equipo 10",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 3",
+      "jugado": true
+    },
+    {
+      "id": 4,
+      "jornada": 1,
+      "fecha": "2026-08-15",
+      "equipo_local": "Equipo 4",
+      "equipo_visitante": "Equipo 9",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 0
+      },
+      "ganador": "Equipo 4",
+      "jugado": true
+    },
+    {
+      "id": 5,
+      "jornada": 1,
+      "fecha": "2026-08-15",
+      "equipo_local": "Equipo 5",
+      "equipo_visitante": "Equipo 8",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 0
+      },
+      "ganador": "Equipo 5",
+      "jugado": true
+    },
+    {
+      "id": 6,
+      "jornada": 1,
+      "fecha": "2026-08-15",
+      "equipo_local": "Equipo 6",
+      "equipo_visitante": "Equipo 7",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 7",
+      "jugado": true
+    },
+    {
+      "id": 7,
+      "jornada": 2,
+      "fecha": "2026-08-22",
+      "equipo_local": "Equipo 11",
+      "equipo_visitante": "Equipo 1",
+      "resultado": {
+        "goles_local": 0,
+        "goles_visitante": 1
+      },
+      "ganador": "Equipo 1",
+      "jugado": true
+    },
+    {
+      "id": 8,
+      "jornada": 2,
+      "fecha": "2026-08-22",
+      "equipo_local": "Equipo 10",
+      "equipo_visitante": "Equipo 12",
+      "resultado": {
+        "goles_local": 2,
+        "goles_visitante": 2
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 9,
+      "jornada": 2,
+      "fecha": "2026-08-22",
+      "equipo_local": "Equipo 9",
+      "equipo_visitante": "Equipo 2",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 2",
+      "jugado": true
+    },
+    {
+      "id": 10,
+      "jornada": 2,
+      "fecha": "2026-08-22",
+      "equipo_local": "Equipo 8",
+      "equipo_visitante": "Equipo 3",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 0
+      },
+      "ganador": "Equipo 8",
+      "jugado": true
+    },
+    {
+      "id": 11,
+      "jornada": 2,
+      "fecha": "2026-08-22",
+      "equipo_local": "Equipo 7",
+      "equipo_visitante": "Equipo 4",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 7",
+      "jugado": true
+    },
+    {
+      "id": 12,
+      "jornada": 2,
+      "fecha": "2026-08-22",
+      "equipo_local": "Equipo 6",
+      "equipo_visitante": "Equipo 5",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 1
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 13,
+      "jornada": 3,
+      "fecha": "2026-08-29",
+      "equipo_local": "Equipo 1",
+      "equipo_visitante": "Equipo 10",
+      "resultado": {
+        "goles_local": 4,
+        "goles_visitante": 1
+      },
+      "ganador": "Equipo 1",
+      "jugado": true
+    },
+    {
+      "id": 14,
+      "jornada": 3,
+      "fecha": "2026-08-29",
+      "equipo_local": "Equipo 11",
+      "equipo_visitante": "Equipo 9",
+      "resultado": {
+        "goles_local": 0,
+        "goles_visitante": 0
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 15,
+      "jornada": 3,
+      "fecha": "2026-08-29",
+      "equipo_local": "Equipo 12",
+      "equipo_visitante": "Equipo 8",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 12",
+      "jugado": true
+    },
+    {
+      "id": 16,
+      "jornada": 3,
+      "fecha": "2026-08-29",
+      "equipo_local": "Equipo 2",
+      "equipo_visitante": "Equipo 7",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 2",
+      "jugado": true
+    },
+    {
+      "id": 17,
+      "jornada": 3,
+      "fecha": "2026-08-29",
+      "equipo_local": "Equipo 3",
+      "equipo_visitante": "Equipo 6",
+      "resultado": {
+        "goles_local": 2,
+        "goles_visitante": 4
+      },
+      "ganador": "Equipo 6",
+      "jugado": true
+    },
+    {
+      "id": 18,
+      "jornada": 3,
+      "fecha": "2026-08-29",
+      "equipo_local": "Equipo 4",
+      "equipo_visitante": "Equipo 5",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 5",
+      "jugado": true
+    },
+    {
+      "id": 19,
+      "jornada": 4,
+      "fecha": "2026-09-05",
+      "equipo_local": "Equipo 9",
+      "equipo_visitante": "Equipo 1",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 9",
+      "jugado": true
+    },
+    {
+      "id": 20,
+      "jornada": 4,
+      "fecha": "2026-09-05",
+      "equipo_local": "Equipo 8",
+      "equipo_visitante": "Equipo 10",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 8",
+      "jugado": true
+    },
+    {
+      "id": 21,
+      "jornada": 4,
+      "fecha": "2026-09-05",
+      "equipo_local": "Equipo 7",
+      "equipo_visitante": "Equipo 11",
+      "resultado": {
+        "goles_local": 2,
+        "goles_visitante": 0
+      },
+      "ganador": "Equipo 7",
+      "jugado": true
+    },
+    {
+      "id": 22,
+      "jornada": 4,
+      "fecha": "2026-09-05",
+      "equipo_local": "Equipo 6",
+      "equipo_visitante": "Equipo 12",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 1
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 23,
+      "jornada": 4,
+      "fecha": "2026-09-05",
+      "equipo_local": "Equipo 5",
+      "equipo_visitante": "Equipo 2",
+      "resultado": {
+        "goles_local": 0,
+        "goles_visitante": 1
+      },
+      "ganador": "Equipo 2",
+      "jugado": true
+    },
+    {
+      "id": 24,
+      "jornada": 4,
+      "fecha": "2026-09-05",
+      "equipo_local": "Equipo 4",
+      "equipo_visitante": "Equipo 3",
+      "resultado": {
+        "goles_local": 0,
+        "goles_visitante": 1
+      },
+      "ganador": "Equipo 3",
+      "jugado": true
+    },
+    {
+      "id": 25,
+      "jornada": 5,
+      "fecha": "2026-09-12",
+      "equipo_local": "Equipo 1",
+      "equipo_visitante": "Equipo 8",
+      "resultado": {
+        "goles_local": 2,
+        "goles_visitante": 1
+      },
+      "ganador": "Equipo 1",
+      "jugado": true
+    },
+    {
+      "id": 26,
+      "jornada": 5,
+      "fecha": "2026-09-12",
+      "equipo_local": "Equipo 9",
+      "equipo_visitante": "Equipo 7",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 1
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 27,
+      "jornada": 5,
+      "fecha": "2026-09-12",
+      "equipo_local": "Equipo 10",
+      "equipo_visitante": "Equipo 6",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 4
+      },
+      "ganador": "Equipo 6",
+      "jugado": true
+    },
+    {
+      "id": 28,
+      "jornada": 5,
+      "fecha": "2026-09-12",
+      "equipo_local": "Equipo 11",
+      "equipo_visitante": "Equipo 5",
+      "resultado": {
+        "goles_local": 2,
+        "goles_visitante": 2
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 29,
+      "jornada": 5,
+      "fecha": "2026-09-12",
+      "equipo_local": "Equipo 12",
+      "equipo_visitante": "Equipo 4",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 4",
+      "jugado": true
+    },
+    {
+      "id": 30,
+      "jornada": 5,
+      "fecha": "2026-09-12",
+      "equipo_local": "Equipo 2",
+      "equipo_visitante": "Equipo 3",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 1
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 31,
+      "jornada": 6,
+      "fecha": "2026-09-19",
+      "equipo_local": "Equipo 7",
+      "equipo_visitante": "Equipo 1",
+      "resultado": {
+        "goles_local": 4,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 7",
+      "jugado": true
+    },
+    {
+      "id": 32,
+      "jornada": 6,
+      "fecha": "2026-09-19",
+      "equipo_local": "Equipo 6",
+      "equipo_visitante": "Equipo 8",
+      "resultado": {
+        "goles_local": 2,
+        "goles_visitante": 2
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 33,
+      "jornada": 6,
+      "fecha": "2026-09-19",
+      "equipo_local": "Equipo 5",
+      "equipo_visitante": "Equipo 9",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 3
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 34,
+      "jornada": 6,
+      "fecha": "2026-09-19",
+      "equipo_local": "Equipo 4",
+      "equipo_visitante": "Equipo 10",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 0
+      },
+      "ganador": "Equipo 4",
+      "jugado": true
+    },
+    {
+      "id": 35,
+      "jornada": 6,
+      "fecha": "2026-09-19",
+      "equipo_local": "Equipo 3",
+      "equipo_visitante": "Equipo 11",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 1
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 36,
+      "jornada": 6,
+      "fecha": "2026-09-19",
+      "equipo_local": "Equipo 2",
+      "equipo_visitante": "Equipo 12",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 4
+      },
+      "ganador": "Equipo 12",
+      "jugado": true
+    },
+    {
+      "id": 37,
+      "jornada": 7,
+      "fecha": "2026-09-26",
+      "equipo_local": "Equipo 1",
+      "equipo_visitante": "Equipo 6",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 1
+      },
+      "ganador": "Equipo 1",
+      "jugado": true
+    },
+    {
+      "id": 38,
+      "jornada": 7,
+      "fecha": "2026-09-26",
+      "equipo_local": "Equipo 7",
+      "equipo_visitante": "Equipo 5",
+      "resultado": {
+        "goles_local": 2,
+        "goles_visitante": 1
+      },
+      "ganador": "Equipo 7",
+      "jugado": true
+    },
+    {
+      "id": 39,
+      "jornada": 7,
+      "fecha": "2026-09-26",
+      "equipo_local": "Equipo 8",
+      "equipo_visitante": "Equipo 4",
+      "resultado": {
+        "goles_local": 4,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 8",
+      "jugado": true
+    },
+    {
+      "id": 40,
+      "jornada": 7,
+      "fecha": "2026-09-26",
+      "equipo_local": "Equipo 9",
+      "equipo_visitante": "Equipo 3",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 1
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 41,
+      "jornada": 7,
+      "fecha": "2026-09-26",
+      "equipo_local": "Equipo 10",
+      "equipo_visitante": "Equipo 2",
+      "resultado": {
+        "goles_local": 2,
+        "goles_visitante": 1
+      },
+      "ganador": "Equipo 10",
+      "jugado": true
+    },
+    {
+      "id": 42,
+      "jornada": 7,
+      "fecha": "2026-09-26",
+      "equipo_local": "Equipo 11",
+      "equipo_visitante": "Equipo 12",
+      "resultado": {
+        "goles_local": 2,
+        "goles_visitante": 3
+      },
+      "ganador": "Equipo 12",
+      "jugado": true
+    },
+    {
+      "id": 43,
+      "jornada": 8,
+      "fecha": "2026-10-03",
+      "equipo_local": "Equipo 5",
+      "equipo_visitante": "Equipo 1",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 1
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 44,
+      "jornada": 8,
+      "fecha": "2026-10-03",
+      "equipo_local": "Equipo 4",
+      "equipo_visitante": "Equipo 6",
+      "resultado": {
+        "goles_local": 4,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 4",
+      "jugado": true
+    },
+    {
+      "id": 45,
+      "jornada": 8,
+      "fecha": "2026-10-03",
+      "equipo_local": "Equipo 3",
+      "equipo_visitante": "Equipo 7",
+      "resultado": {
+        "goles_local": 0,
+        "goles_visitante": 0
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 46,
+      "jornada": 8,
+      "fecha": "2026-10-03",
+      "equipo_local": "Equipo 2",
+      "equipo_visitante": "Equipo 8",
+      "resultado": {
+        "goles_local": 0,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 8",
+      "jugado": true
+    },
+    {
+      "id": 47,
+      "jornada": 8,
+      "fecha": "2026-10-03",
+      "equipo_local": "Equipo 12",
+      "equipo_visitante": "Equipo 9",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 1
+      },
+      "ganador": "Equipo 12",
+      "jugado": true
+    },
+    {
+      "id": 48,
+      "jornada": 8,
+      "fecha": "2026-10-03",
+      "equipo_local": "Equipo 11",
+      "equipo_visitante": "Equipo 10",
+      "resultado": {
+        "goles_local": 0,
+        "goles_visitante": 1
+      },
+      "ganador": "Equipo 10",
+      "jugado": true
+    },
+    {
+      "id": 49,
+      "jornada": 9,
+      "fecha": "2026-10-10",
+      "equipo_local": "Equipo 1",
+      "equipo_visitante": "Equipo 4",
+      "resultado": {
+        "goles_local": 4,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 1",
+      "jugado": true
+    },
+    {
+      "id": 50,
+      "jornada": 9,
+      "fecha": "2026-10-10",
+      "equipo_local": "Equipo 5",
+      "equipo_visitante": "Equipo 3",
+      "resultado": {
+        "goles_local": 4,
+        "goles_visitante": 3
+      },
+      "ganador": "Equipo 5",
+      "jugado": true
+    },
+    {
+      "id": 51,
+      "jornada": 9,
+      "fecha": "2026-10-10",
+      "equipo_local": "Equipo 6",
+      "equipo_visitante": "Equipo 2",
+      "resultado": {
+        "goles_local": 0,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 2",
+      "jugado": true
+    },
+    {
+      "id": 52,
+      "jornada": 9,
+      "fecha": "2026-10-10",
+      "equipo_local": "Equipo 7",
+      "equipo_visitante": "Equipo 12",
+      "resultado": {
+        "goles_local": 2,
+        "goles_visitante": 2
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 53,
+      "jornada": 9,
+      "fecha": "2026-10-10",
+      "equipo_local": "Equipo 8",
+      "equipo_visitante": "Equipo 11",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 11",
+      "jugado": true
+    },
+    {
+      "id": 54,
+      "jornada": 9,
+      "fecha": "2026-10-10",
+      "equipo_local": "Equipo 9",
+      "equipo_visitante": "Equipo 10",
+      "resultado": {
+        "goles_local": 0,
+        "goles_visitante": 1
+      },
+      "ganador": "Equipo 10",
+      "jugado": true
+    },
+    {
+      "id": 55,
+      "jornada": 10,
+      "fecha": "2026-10-17",
+      "equipo_local": "Equipo 3",
+      "equipo_visitante": "Equipo 1",
+      "resultado": {
+        "goles_local": 2,
+        "goles_visitante": 4
+      },
+      "ganador": "Equipo 1",
+      "jugado": true
+    },
+    {
+      "id": 56,
+      "jornada": 10,
+      "fecha": "2026-10-17",
+      "equipo_local": "Equipo 2",
+      "equipo_visitante": "Equipo 4",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 1
+      },
+      "ganador": "Equipo 2",
+      "jugado": true
+    },
+    {
+      "id": 57,
+      "jornada": 10,
+      "fecha": "2026-10-17",
+      "equipo_local": "Equipo 12",
+      "equipo_visitante": "Equipo 5",
+      "resultado": {
+        "goles_local": 2,
+        "goles_visitante": 1
+      },
+      "ganador": "Equipo 12",
+      "jugado": true
+    },
+    {
+      "id": 58,
+      "jornada": 10,
+      "fecha": "2026-10-17",
+      "equipo_local": "Equipo 11",
+      "equipo_visitante": "Equipo 6",
+      "resultado": {
+        "goles_local": 4,
+        "goles_visitante": 3
+      },
+      "ganador": "Equipo 11",
+      "jugado": true
+    },
+    {
+      "id": 59,
+      "jornada": 10,
+      "fecha": "2026-10-17",
+      "equipo_local": "Equipo 10",
+      "equipo_visitante": "Equipo 7",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 7",
+      "jugado": true
+    },
+    {
+      "id": 60,
+      "jornada": 10,
+      "fecha": "2026-10-17",
+      "equipo_local": "Equipo 9",
+      "equipo_visitante": "Equipo 8",
+      "resultado": {
+        "goles_local": 2,
+        "goles_visitante": 1
+      },
+      "ganador": "Equipo 9",
+      "jugado": true
+    },
+    {
+      "id": 61,
+      "jornada": 11,
+      "fecha": "2026-10-24",
+      "equipo_local": "Equipo 1",
+      "equipo_visitante": "Equipo 2",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 1",
+      "jugado": true
+    },
+    {
+      "id": 62,
+      "jornada": 11,
+      "fecha": "2026-10-24",
+      "equipo_local": "Equipo 3",
+      "equipo_visitante": "Equipo 12",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 3",
+      "jugado": true
+    },
+    {
+      "id": 63,
+      "jornada": 11,
+      "fecha": "2026-10-24",
+      "equipo_local": "Equipo 4",
+      "equipo_visitante": "Equipo 11",
+      "resultado": {
+        "goles_local": 0,
+        "goles_visitante": 1
+      },
+      "ganador": "Equipo 11",
+      "jugado": true
+    },
+    {
+      "id": 64,
+      "jornada": 11,
+      "fecha": "2026-10-24",
+      "equipo_local": "Equipo 5",
+      "equipo_visitante": "Equipo 10",
+      "resultado": {
+        "goles_local": 0,
+        "goles_visitante": 4
+      },
+      "ganador": "Equipo 10",
+      "jugado": true
+    },
+    {
+      "id": 65,
+      "jornada": 11,
+      "fecha": "2026-10-24",
+      "equipo_local": "Equipo 6",
+      "equipo_visitante": "Equipo 9",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 3
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 66,
+      "jornada": 11,
+      "fecha": "2026-10-24",
+      "equipo_local": "Equipo 7",
+      "equipo_visitante": "Equipo 8",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 0
+      },
+      "ganador": "Equipo 7",
+      "jugado": true
+    },
+    {
+      "id": 67,
+      "jornada": 12,
+      "fecha": "2026-10-31",
+      "equipo_local": "Equipo 12",
+      "equipo_visitante": "Equipo 1",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 4
+      },
+      "ganador": "Equipo 1",
+      "jugado": true
+    },
+    {
+      "id": 68,
+      "jornada": 12,
+      "fecha": "2026-10-31",
+      "equipo_local": "Equipo 11",
+      "equipo_visitante": "Equipo 2",
+      "resultado": {
+        "goles_local": 0,
+        "goles_visitante": 2
+      },
+      "ganador": "Equipo 2",
+      "jugado": true
+    },
+    {
+      "id": 69,
+      "jornada": 12,
+      "fecha": "2026-10-31",
+      "equipo_local": "Equipo 10",
+      "equipo_visitante": "Equipo 3",
+      "resultado": {
+        "goles_local": 0,
+        "goles_visitante": 3
+      },
+      "ganador": "Equipo 3",
+      "jugado": true
+    },
+    {
+      "id": 70,
+      "jornada": 12,
+      "fecha": "2026-10-31",
+      "equipo_local": "Equipo 9",
+      "equipo_visitante": "Equipo 4",
+      "resultado": {
+        "goles_local": 3,
+        "goles_visitante": 0
+      },
+      "ganador": "Equipo 9",
+      "jugado": true
+    },
+    {
+      "id": 71,
+      "jornada": 12,
+      "fecha": "2026-10-31",
+      "equipo_local": "Equipo 8",
+      "equipo_visitante": "Equipo 5",
+      "resultado": {
+        "goles_local": 2,
+        "goles_visitante": 2
+      },
+      "ganador": "empate",
+      "jugado": true
+    },
+    {
+      "id": 72,
+      "jornada": 12,
+      "fecha": "2026-10-31",
+      "equipo_local": "Equipo 7",
+      "equipo_visitante": "Equipo 6",
+      "resultado": {
+        "goles_local": 1,
+        "goles_visitante": 3
+      },
+      "ganador": "Equipo 6",
+      "jugado": true
+    },
+    {
+      "id": 73,
+      "jornada": 13,
+      "fecha": "2026-11-07",
+      "equipo_local": "Equipo 1",
+      "equipo_visitante": "Equipo 11",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 74,
+      "jornada": 13,
+      "fecha": "2026-11-07",
+      "equipo_local": "Equipo 12",
+      "equipo_visitante": "Equipo 10",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 75,
+      "jornada": 13,
+      "fecha": "2026-11-07",
+      "equipo_local": "Equipo 2",
+      "equipo_visitante": "Equipo 9",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 76,
+      "jornada": 13,
+      "fecha": "2026-11-07",
+      "equipo_local": "Equipo 3",
+      "equipo_visitante": "Equipo 8",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 77,
+      "jornada": 13,
+      "fecha": "2026-11-07",
+      "equipo_local": "Equipo 4",
+      "equipo_visitante": "Equipo 7",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 78,
+      "jornada": 13,
+      "fecha": "2026-11-07",
+      "equipo_local": "Equipo 5",
+      "equipo_visitante": "Equipo 6",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 79,
+      "jornada": 14,
+      "fecha": "2026-11-14",
+      "equipo_local": "Equipo 10",
+      "equipo_visitante": "Equipo 1",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 80,
+      "jornada": 14,
+      "fecha": "2026-11-14",
+      "equipo_local": "Equipo 9",
+      "equipo_visitante": "Equipo 11",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 81,
+      "jornada": 14,
+      "fecha": "2026-11-14",
+      "equipo_local": "Equipo 8",
+      "equipo_visitante": "Equipo 12",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 82,
+      "jornada": 14,
+      "fecha": "2026-11-14",
+      "equipo_local": "Equipo 7",
+      "equipo_visitante": "Equipo 2",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 83,
+      "jornada": 14,
+      "fecha": "2026-11-14",
+      "equipo_local": "Equipo 6",
+      "equipo_visitante": "Equipo 3",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 84,
+      "jornada": 14,
+      "fecha": "2026-11-14",
+      "equipo_local": "Equipo 5",
+      "equipo_visitante": "Equipo 4",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 85,
+      "jornada": 15,
+      "fecha": "2026-11-21",
+      "equipo_local": "Equipo 1",
+      "equipo_visitante": "Equipo 9",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 86,
+      "jornada": 15,
+      "fecha": "2026-11-21",
+      "equipo_local": "Equipo 10",
+      "equipo_visitante": "Equipo 8",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 87,
+      "jornada": 15,
+      "fecha": "2026-11-21",
+      "equipo_local": "Equipo 11",
+      "equipo_visitante": "Equipo 7",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 88,
+      "jornada": 15,
+      "fecha": "2026-11-21",
+      "equipo_local": "Equipo 12",
+      "equipo_visitante": "Equipo 6",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 89,
+      "jornada": 15,
+      "fecha": "2026-11-21",
+      "equipo_local": "Equipo 2",
+      "equipo_visitante": "Equipo 5",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 90,
+      "jornada": 15,
+      "fecha": "2026-11-21",
+      "equipo_local": "Equipo 3",
+      "equipo_visitante": "Equipo 4",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 91,
+      "jornada": 16,
+      "fecha": "2026-11-28",
+      "equipo_local": "Equipo 8",
+      "equipo_visitante": "Equipo 1",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 92,
+      "jornada": 16,
+      "fecha": "2026-11-28",
+      "equipo_local": "Equipo 7",
+      "equipo_visitante": "Equipo 9",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 93,
+      "jornada": 16,
+      "fecha": "2026-11-28",
+      "equipo_local": "Equipo 6",
+      "equipo_visitante": "Equipo 10",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 94,
+      "jornada": 16,
+      "fecha": "2026-11-28",
+      "equipo_local": "Equipo 5",
+      "equipo_visitante": "Equipo 11",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 95,
+      "jornada": 16,
+      "fecha": "2026-11-28",
+      "equipo_local": "Equipo 4",
+      "equipo_visitante": "Equipo 12",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 96,
+      "jornada": 16,
+      "fecha": "2026-11-28",
+      "equipo_local": "Equipo 3",
+      "equipo_visitante": "Equipo 2",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 97,
+      "jornada": 17,
+      "fecha": "2026-12-05",
+      "equipo_local": "Equipo 1",
+      "equipo_visitante": "Equipo 7",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 98,
+      "jornada": 17,
+      "fecha": "2026-12-05",
+      "equipo_local": "Equipo 8",
+      "equipo_visitante": "Equipo 6",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 99,
+      "jornada": 17,
+      "fecha": "2026-12-05",
+      "equipo_local": "Equipo 9",
+      "equipo_visitante": "Equipo 5",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 100,
+      "jornada": 17,
+      "fecha": "2026-12-05",
+      "equipo_local": "Equipo 10",
+      "equipo_visitante": "Equipo 4",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 101,
+      "jornada": 17,
+      "fecha": "2026-12-05",
+      "equipo_local": "Equipo 11",
+      "equipo_visitante": "Equipo 3",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 102,
+      "jornada": 17,
+      "fecha": "2026-12-05",
+      "equipo_local": "Equipo 12",
+      "equipo_visitante": "Equipo 2",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 103,
+      "jornada": 18,
+      "fecha": "2026-12-12",
+      "equipo_local": "Equipo 6",
+      "equipo_visitante": "Equipo 1",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 104,
+      "jornada": 18,
+      "fecha": "2026-12-12",
+      "equipo_local": "Equipo 5",
+      "equipo_visitante": "Equipo 7",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 105,
+      "jornada": 18,
+      "fecha": "2026-12-12",
+      "equipo_local": "Equipo 4",
+      "equipo_visitante": "Equipo 8",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 106,
+      "jornada": 18,
+      "fecha": "2026-12-12",
+      "equipo_local": "Equipo 3",
+      "equipo_visitante": "Equipo 9",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 107,
+      "jornada": 18,
+      "fecha": "2026-12-12",
+      "equipo_local": "Equipo 2",
+      "equipo_visitante": "Equipo 10",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 108,
+      "jornada": 18,
+      "fecha": "2026-12-12",
+      "equipo_local": "Equipo 12",
+      "equipo_visitante": "Equipo 11",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 109,
+      "jornada": 19,
+      "fecha": "2026-12-19",
+      "equipo_local": "Equipo 1",
+      "equipo_visitante": "Equipo 5",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 110,
+      "jornada": 19,
+      "fecha": "2026-12-19",
+      "equipo_local": "Equipo 6",
+      "equipo_visitante": "Equipo 4",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 111,
+      "jornada": 19,
+      "fecha": "2026-12-19",
+      "equipo_local": "Equipo 7",
+      "equipo_visitante": "Equipo 3",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 112,
+      "jornada": 19,
+      "fecha": "2026-12-19",
+      "equipo_local": "Equipo 8",
+      "equipo_visitante": "Equipo 2",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 113,
+      "jornada": 19,
+      "fecha": "2026-12-19",
+      "equipo_local": "Equipo 9",
+      "equipo_visitante": "Equipo 12",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 114,
+      "jornada": 19,
+      "fecha": "2026-12-19",
+      "equipo_local": "Equipo 10",
+      "equipo_visitante": "Equipo 11",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 115,
+      "jornada": 20,
+      "fecha": "2026-12-26",
+      "equipo_local": "Equipo 4",
+      "equipo_visitante": "Equipo 1",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 116,
+      "jornada": 20,
+      "fecha": "2026-12-26",
+      "equipo_local": "Equipo 3",
+      "equipo_visitante": "Equipo 5",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 117,
+      "jornada": 20,
+      "fecha": "2026-12-26",
+      "equipo_local": "Equipo 2",
+      "equipo_visitante": "Equipo 6",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 118,
+      "jornada": 20,
+      "fecha": "2026-12-26",
+      "equipo_local": "Equipo 12",
+      "equipo_visitante": "Equipo 7",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 119,
+      "jornada": 20,
+      "fecha": "2026-12-26",
+      "equipo_local": "Equipo 11",
+      "equipo_visitante": "Equipo 8",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 120,
+      "jornada": 20,
+      "fecha": "2026-12-26",
+      "equipo_local": "Equipo 10",
+      "equipo_visitante": "Equipo 9",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 121,
+      "jornada": 21,
+      "fecha": "2027-01-02",
+      "equipo_local": "Equipo 1",
+      "equipo_visitante": "Equipo 3",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 122,
+      "jornada": 21,
+      "fecha": "2027-01-02",
+      "equipo_local": "Equipo 4",
+      "equipo_visitante": "Equipo 2",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 123,
+      "jornada": 21,
+      "fecha": "2027-01-02",
+      "equipo_local": "Equipo 5",
+      "equipo_visitante": "Equipo 12",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 124,
+      "jornada": 21,
+      "fecha": "2027-01-02",
+      "equipo_local": "Equipo 6",
+      "equipo_visitante": "Equipo 11",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 125,
+      "jornada": 21,
+      "fecha": "2027-01-02",
+      "equipo_local": "Equipo 7",
+      "equipo_visitante": "Equipo 10",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 126,
+      "jornada": 21,
+      "fecha": "2027-01-02",
+      "equipo_local": "Equipo 8",
+      "equipo_visitante": "Equipo 9",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 127,
+      "jornada": 22,
+      "fecha": "2027-01-09",
+      "equipo_local": "Equipo 2",
+      "equipo_visitante": "Equipo 1",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 128,
+      "jornada": 22,
+      "fecha": "2027-01-09",
+      "equipo_local": "Equipo 12",
+      "equipo_visitante": "Equipo 3",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 129,
+      "jornada": 22,
+      "fecha": "2027-01-09",
+      "equipo_local": "Equipo 11",
+      "equipo_visitante": "Equipo 4",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 130,
+      "jornada": 22,
+      "fecha": "2027-01-09",
+      "equipo_local": "Equipo 10",
+      "equipo_visitante": "Equipo 5",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    },
+    {
+      "id": 131,
+      "jornada": 22,
+      "fecha": "2027-01-09",
+      "equipo_local": "Equipo 9",
+      "equipo_visitante": "Equipo 6",
+      "resultado": null,
+      "ganador": null,  
+      "jugado": false
+    },
+    {
+      "id": 132,
+      "jornada": 22,
+      "fecha": "2027-01-09",
+      "equipo_local": "Equipo 8",
+      "equipo_visitante": "Equipo 7",
+      "resultado": null,
+      "ganador": null,
+      "jugado": false
+    }
+  ]
+}

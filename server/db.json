@@ -1,0 +1,355 @@
+{
+  "players": [
+    {
+      "id": 1,
+      "name": "Carlos Barrientos",
+      "positions": [
+        "DEL"
+      ],
+      "number": 12,
+      "phone": "34684015410",
+      "photo": "/players/1.jpg"
+    },
+    {
+      "id": 2,
+      "name": "Edu Alba",
+      "positions": [
+        "VOL"
+      ],
+      "number": 1,
+      "phone": "34600000002",
+      "photo": "/players/2.jpg"
+    },
+    {
+      "id": 3,
+      "name": "Adri",
+      "positions": [
+        "LAT"
+      ],
+      "number": 2,
+      "phone": "34600000003",
+      "photo": "/players/3.jpg"
+    },
+    {
+      "id": 4,
+      "name": "Alexander",
+      "positions": [
+        "CEN"
+      ],
+      "number": 3,
+      "phone": "34600000004",
+      "photo": "/players/4.jpg"
+    },
+    {
+      "id": 5,
+      "name": "Boni",
+      "positions": [
+        "LAT"
+      ],
+      "number": 4,
+      "phone": "34600000005",
+      "photo": "/players/5.jpg"
+    },
+    {
+      "id": 6,
+      "name": "Artu",
+      "positions": [
+        "CEN"
+      ],
+      "number": 5,
+      "phone": "34600000006",
+      "photo": "/players/6.jpg"
+    },
+    {
+      "id": 7,
+      "name": "Anglada",
+      "positions": [
+        "CEN"
+      ],
+      "number": 6,
+      "phone": "34600000007",
+      "photo": "/players/7.jpg"
+    },
+    {
+      "id": 8,
+      "name": "Zurdo",
+      "positions": [
+        "DEL"
+      ],
+      "number": 7,
+      "phone": "34600000008",
+      "photo": "/players/8.jpg"
+    },
+    {
+      "id": 9,
+      "name": "Fer",
+      "positions": [
+        "LAT"
+      ],
+      "number": 8,
+      "phone": "34600000009",
+      "photo": "/players/9.jpg"
+    },
+    {
+      "id": 10,
+      "name": "Edu Gonzalez",
+      "positions": [
+        "VOL"
+      ],
+      "number": 9,
+      "phone": "34600000010",
+      "photo": "/players/10.jpg"
+    },
+    {
+      "id": 11,
+      "name": "Guille Rodriguez",
+      "positions": [
+        "DEL"
+      ],
+      "number": 10,
+      "phone": "34600000011",
+      "photo": "/players/11.jpg"
+    },
+    {
+      "id": 12,
+      "name": "Mecos",
+      "positions": [
+        "CEN"
+      ],
+      "number": 11,
+      "phone": "34600000012",
+      "photo": "/players/12.jpg"
+    },
+    {
+      "id": 13,
+      "name": "Igna",
+      "positions": [
+        "POR"
+      ],
+      "number": 13,
+      "phone": "34600000013",
+      "photo": "/players/13.jpg"
+    },
+    {
+      "id": 14,
+      "name": "Ponce",
+      "positions": [
+        "POR"
+      ],
+      "number": 14,
+      "phone": "34600000014",
+      "photo": "/players/14.jpg"
+    },
+    {
+      "id": 15,
+      "name": "Jose",
+      "positions": [
+        "VOL"
+      ],
+      "number": 15,
+      "phone": "34600000015",
+      "photo": "/players/15.jpg"
+    },
+    {
+      "id": 16,
+      "name": "Juanma",
+      "positions": [
+        "VOL"
+      ],
+      "number": 16,
+      "phone": "34600000016",
+      "photo": "/players/16.jpg"
+    },
+    {
+      "id": 17,
+      "name": "Luis",
+      "positions": [
+        "VOL"
+      ],
+      "number": 17,
+      "phone": "34600000017",
+      "photo": "/players/17.jpg"
+    },
+    {
+      "id": 18,
+      "name": "Rodri",
+      "positions": [
+        "LAT"
+      ],
+      "number": 18,
+      "phone": "34600000018",
+      "photo": null
+    },
+    {
+      "id": 19,
+      "name": "Villar",
+      "positions": [
+        "DEL"
+      ],
+      "number": 19,
+      "phone": "34600000019",
+      "photo": null
+    }
+  ],
+  "users": [
+    {
+      "id": 1,
+      "name": "Carlos Barrientos",
+      "email": "carlosbarrientoslopez@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 2,
+      "name": "Edu Alba",
+      "email": "edualba@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 3,
+      "name": "Adri",
+      "email": "adri@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 4,
+      "name": "Alexander",
+      "email": "alexander@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 5,
+      "name": "Boni",
+      "email": "boni@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 6,
+      "name": "Artu",
+      "email": "artu@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 7,
+      "name": "Anglada",
+      "email": "anglada@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 8,
+      "name": "Zurdo",
+      "email": "zurdo@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 9,
+      "name": "Fer",
+      "email": "fer@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 10,
+      "name": "Edu Gonzalez",
+      "email": "edugonzalez@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 11,
+      "name": "Guille Rodriguez",
+      "email": "guillerodriguez@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 12,
+      "name": "Mecos",
+      "email": "mecos@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 13,
+      "name": "Igna",
+      "email": "igna@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 14,
+      "name": "Ponce",
+      "email": "ponce@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 15,
+      "name": "Jose",
+      "email": "jose@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 16,
+      "name": "Juanma",
+      "email": "juanma@gmail.com",
+      "password": "123456",
+      "role": "entrenador"
+    },
+    {
+      "id": 17,
+      "name": "Luis",
+      "email": "luis@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 18,
+      "name": "Rodri",
+      "email": "rodri@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    },
+    {
+      "id": 19,
+      "name": "Villar",
+      "email": "villar@gmail.com",
+      "password": "123456",
+      "role": "jugador"
+    }
+  ],
+  "nextMatch": {
+    "id": 1,
+    "rival": "Convocatoria Partido X",
+    "date": "2026-08-07",
+    "whatsappPollId": "PrDHHaGypkO5lg-wooBq53ih_2wLQ"
+  },
+  "club": {
+    "name": "Huevos FC"
+  },
+  "matchEvents": {
+    "1": []
+  },
+  "convocatoriaHistory": [
+    {
+      "id": 1,
+      "rival": "Convocatoria Partido X",
+      "date": "2026-08-07",
+      "whatsappPollId": "PrDHHaGypkO5lg-wooBq53ih_2wLQ",
+      "votes": {
+        "34684015410": "Si",
+        "34622619406": "Si",
+        "34684394949": "No"
+      },
+      "archivedAt": "2026-08-08T13:40:19.558Z"
+    }
+  ]
+}
