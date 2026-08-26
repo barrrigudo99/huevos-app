@@ -1,9 +1,0 @@
-{
-  "name": "Futbol 7 Manager",
-  "short_name": "Futbol7",
-  "start_url": ".",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0f6e56",
-  "icons": []
-}

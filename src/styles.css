@@ -92,6 +92,11 @@ body {
 .nav-btn.active {
   color: var(--accent);
 }
+.nav-icon-img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
 
 .list {
   display: flex;
@@ -102,10 +107,36 @@ body {
 .plantilla-toolbar {
   display: flex;
   justify-content: flex-end;
+  margin-bottom: 2px;
 }
 .date-filter {
-  max-width: 220px;
-  font-size: 12px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  max-width: 260px;
+  width: 100%;
+  padding: 9px 34px 9px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background-color: var(--surface-1);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%230f6e56' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(28, 28, 26, 0.06);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.date-filter:hover {
+  border-color: var(--accent);
+  background-color: var(--accent-bg);
+}
+.date-filter:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
 .card {
@@ -588,4 +619,307 @@ select {
 .feed-row.clickable,
 .row.clickable {
   cursor: pointer;
+}
+
+
+/* --- NextMatchCard: añadir al final de src/styles.css --- */
+
+.next-match-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 16px 16px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--accent) 0%, #0a4a3c 100%);
+  color: white;
+  box-shadow: 0 6px 20px rgba(15, 110, 86, 0.28);
+  margin-bottom: 4px;
+}
+.next-match-card::after {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 60%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+.next-match-tag {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.16);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.next-match-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.next-match-nav .next-match-tag {
+  align-self: center;
+}
+.next-match-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  color: white;
+  cursor: pointer;
+  flex: none;
+}
+.next-match-nav-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.26);
+}
+.next-match-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.next-match-teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.next-match-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.next-match-crest {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.next-match-crest-us {
+  background: white;
+  color: var(--accent);
+  border-color: white;
+}
+.next-match-team-name {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+.next-match-vs {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.7;
+  flex: none;
+}
+.next-match-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  opacity: 0.9;
+}
+.next-match-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: capitalize;
+}
+.next-match-countdown {
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.16);
+  padding: 5px 12px;
+  border-radius: 999px;
+}
+.next-match-card-empty {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  box-shadow: none;
+  align-items: center;
+  text-align: center;
+}
+.next-match-empty-text {
+  margin: 0;
+  font-size: 13px;
+}
+.next-match-stats-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  border: none;
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.16);
+  color: white;
+}
+.next-match-stats-btn:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+.next-match-card-empty .next-match-stats-btn {
+  margin-top: 4px;
+  background: var(--accent);
+  color: white;
+}
+
+/* --- MatchStatsPanel --- */
+
+.stats-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stats-panel-row {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stats-panel-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stats-panel-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stats-panel-number {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.stats-panel-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.stat-stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stat-stepper-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.stat-stepper-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.stat-stepper-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.stat-stepper-value {
+  min-width: 16px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+.card-toggle {
+  width: 30px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+.card-toggle-roja.active {
+  background: #e74c3c;
+  border-color: #c0392b;
+  color: white;
+}
+/* Expulsión implícita por doble amarilla: mismo aviso que la roja, pero sin
+   poder "quitarla" directamente — hay que bajar las amarillas a menos de 2. */
+.card-toggle-roja.active.implicit {
+  color: #ffe9a6;
+  font-size: 10px;
+  cursor: default;
+}
+
+/* --- MatchResultPanel --- */
+
+.result-panel-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 8px 0 4px;
+}
+.result-panel-sep {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* Selector de partido dentro de Stats, solo para entrenador */
+.stats-match-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.stats-match-picker-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  cursor: pointer;
+  font-size: 13px;
+}
+.stats-match-picker-item:hover {
+  border-color: var(--accent);
 }

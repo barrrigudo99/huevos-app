@@ -1,13 +1,15 @@
 // generador_de_convocatoria_desde_calendario.mjs
-// Lee calendario.json y genera convocatorias SOLO para los partidos del
-// equipo con id 1 (equipos.json), sea local o visitante. Usa tu plantilla
-// real (server/db.json) y una tendencia de asistencia estable por jugador
-// (tendencias_asistencia.json) para que el % de asistencia salga realista.
+// Lee calendario.json y genera UNA convocatoria por ejecución para el
+// siguiente partido pendiente del equipo con id 1 (equipos.json), sea local
+// o visitante. Usa tu plantilla real (server/db.json) y una tendencia de
+// asistencia estable por jugador (4_tendencias_asistencia.json) para que el
+// % de asistencia salga realista.
 //
 // Uso (desde la carpeta simulador/, después de generar calendario.json):
-//   node generador_de_convocatoria_desde_calendario.mjs
-// Cada ejecución añade convocatorias para los partidos del equipo 1 que aún
-// no tuvieran una. Vuelve a lanzarlo si generas más calendario.
+//   node 2generador_de_convocatoria_desde_calendario.mjs
+// Cada ejecución añade la convocatoria del próximo partido pendiente (el más
+// antiguo por jornada/fecha) que aún no la tuviera. Vuelve a lanzarlo cuando
+// quieras generar la siguiente.
 
 import fs from 'fs'
 import path from 'path'
@@ -16,10 +18,10 @@ import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // ---------- CONFIG ----------
-const EQUIPOS_PATH = path.join(__dirname, 'equipos.json')
-const CALENDARIO_PATH = path.join(__dirname, 'calendario.json')
-const CONVOCATORIAS_PATH = path.join(__dirname, 'convocatorias.json')
-const TENDENCIAS_PATH = path.join(__dirname, 'tendencias_asistencia.json')
+const EQUIPOS_PATH = path.join(__dirname, '1_equipos.json')
+const CALENDARIO_PATH = path.join(__dirname, '2_calendario.json')
+const CONVOCATORIAS_PATH = path.join(__dirname, '3_convocatorias.json')
+const TENDENCIAS_PATH = path.join(__dirname, '4_tendencias_asistencia.json')
 const DB_PATH = path.join(__dirname, '..', 'server', 'db.json')
 const MI_EQUIPO_ID = 1
 const PROB_NO_RESPONDE = 0.05
@@ -27,24 +29,24 @@ const RUIDO_SEMANAL = 0.12
 
 const PLAYERS_FALLBACK = [
   { id: 1, name: 'Carlos Barrientos', phone: '34684015410' },
-  { id: 2, name: 'Edu Alba', phone: '34600000002' },
-  { id: 3, name: 'Adri', phone: '34600000003' },
-  { id: 4, name: 'Alexander', phone: '34600000004' },
-  { id: 5, name: 'Boni', phone: '34600000005' },
-  { id: 6, name: 'Artu', phone: '34600000006' },
-  { id: 7, name: 'Anglada', phone: '34600000007' },
-  { id: 8, name: 'Zurdo', phone: '34600000008' },
-  { id: 9, name: 'Fer', phone: '34600000009' },
-  { id: 10, name: 'Edu Gonzalez', phone: '34600000010' },
-  { id: 11, name: 'Guille Rodriguez', phone: '34600000011' },
-  { id: 12, name: 'Mecos', phone: '34600000012' },
-  { id: 13, name: 'Igna', phone: '34600000013' },
-  { id: 14, name: 'Ponce', phone: '34600000014' },
-  { id: 15, name: 'Jose', phone: '34600000015' },
-  { id: 16, name: 'Juanma', phone: '34600000016' },
-  { id: 17, name: 'Luis', phone: '34600000017' },
-  { id: 18, name: 'Rodri', phone: '34600000018' },
-  { id: 19, name: 'Villar', phone: '34600000019' },
+  { id: 2, name: 'Edu Alba', phone: '34660119994' },
+  { id: 3, name: 'Adri', phone: '34654650662' },
+  { id: 4, name: 'Alexander', phone: '34610074607' },
+  { id: 5, name: 'Boni', phone: '34693740846' },
+  { id: 6, name: 'Artu', phone: '34634507343' },
+  { id: 7, name: 'Anglada', phone: '34676527257' },
+  { id: 8, name: 'Zurdo', phone: '34626821050' },
+  { id: 9, name: 'Fer', phone: '34639880171' },
+  { id: 10, name: 'Edu Gonzalez', phone: '34640624633' },
+  { id: 11, name: 'Guille Rodriguez', phone: '34609486985' },
+  { id: 12, name: 'Mecos', phone: '34679265104' },
+  { id: 13, name: 'Igna', phone: '34648515824' },
+  { id: 14, name: 'Ponce', phone: '34601147511' },
+  { id: 15, name: 'Jose', phone: '34604817149' },
+  { id: 16, name: 'Juanma', phone: '34630731212' },
+  { id: 17, name: 'Luis', phone: '34610611931' },
+  { id: 18, name: 'Rodri', phone: '34628657664' },
+  { id: 19, name: 'Villar', phone: '34619300259' },
 ]
 // -----------------------------
 
@@ -116,12 +118,19 @@ function rivalDelPartido(partido, miEquipo) {
   return partido.equipo_local === miEquipo ? partido.equipo_visitante : partido.equipo_local
 }
 
-function ampliarConvocatorias() {
+// Ordena por jornada y, si empatan, por fecha — así "el siguiente pendiente"
+// es siempre el más próximo en el calendario, no uno cualquiera.
+function ordenarPorJornadaYFecha(a, b) {
+  if (a.jornada !== b.jornada) return a.jornada - b.jornada
+  return new Date(a.fecha) - new Date(b.fecha)
+}
+
+function generarSiguienteConvocatoria() {
   const miEquipo = obtenerNombreMiEquipo()
   const calendario = leerJson(CALENDARIO_PATH, [])
 
   if (calendario.length === 0) {
-    console.error(`No se encontró ${CALENDARIO_PATH} o está vacío. Genera antes el calendario (generador_de_calendario.mjs).`)
+    console.error(`No se encontró ${CALENDARIO_PATH} o está vacío. Genera antes el calendario (1generador_de_calendario.mjs).`)
     process.exit(1)
   }
 
@@ -131,19 +140,24 @@ function ampliarConvocatorias() {
   const partidosDeMiEquipo = calendario.filter(
     (p) => p.equipo_local === miEquipo || p.equipo_visitante === miEquipo
   )
-  const partidosPendientes = partidosDeMiEquipo.filter((p) => !idsConConvocatoria.has(p.id))
+  const partidosPendientes = partidosDeMiEquipo
+    .filter((p) => !idsConConvocatoria.has(p.id))
+    .sort(ordenarPorJornadaYFecha)
 
   if (partidosPendientes.length === 0) {
-    console.log(`No hay partidos nuevos de "${miEquipo}" (id ${MI_EQUIPO_ID}) sin convocatoria.`)
+    console.log(`No hay partidos de "${miEquipo}" (id ${MI_EQUIPO_ID}) pendientes de convocatoria.`)
     return
   }
+
+  // Solo el siguiente partido pendiente, no todos de golpe.
+  const partido = partidosPendientes[0]
 
   const jugadores = obtenerJugadores()
   const tendencias = obtenerTendencias(jugadores)
   const ultimoId = convocatoriasExistentes.reduce((max, c) => Math.max(max, c.id), 0)
 
-  const nuevasConvocatorias = partidosPendientes.map((partido, i) => ({
-    id: ultimoId + i + 1,
+  const nuevaConvocatoria = {
+    id: ultimoId + 1,
     matchId: partido.id,
     jornada: partido.jornada,
     rival: rivalDelPartido(partido, miEquipo),
@@ -151,11 +165,20 @@ function ampliarConvocatorias() {
     whatsappPollId: `simulado-${partido.id}`,
     votes: generarVotos(jugadores, tendencias),
     archivedAt: new Date().toISOString(),
-  }))
+  }
 
-  const actualizado = [...convocatoriasExistentes, ...nuevasConvocatorias]
+  const actualizado = [...convocatoriasExistentes, nuevaConvocatoria]
   escribirJson(CONVOCATORIAS_PATH, actualizado)
-  console.log(`${nuevasConvocatorias.length} convocatoria(s) nueva(s) de "${miEquipo}" añadidas a ${CONVOCATORIAS_PATH}.`)
+
+  const restantes = partidosPendientes.length - 1
+  console.log(
+    `Convocatoria generada: jornada ${nuevaConvocatoria.jornada} vs ${nuevaConvocatoria.rival} (${nuevaConvocatoria.date}), matchId ${nuevaConvocatoria.matchId}.`
+  )
+  console.log(
+    restantes > 0
+      ? `Quedan ${restantes} partido(s) de "${miEquipo}" sin convocatoria. Vuelve a ejecutar el script para generar la siguiente.`
+      : `Esa era la última convocatoria pendiente de "${miEquipo}".`
+  )
 }
 
-ampliarConvocatorias()
+generarSiguienteConvocatoria()

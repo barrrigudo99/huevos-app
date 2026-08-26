@@ -15,8 +15,8 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-const EQUIPOS_PATH = path.join(__dirname, 'equipos.json')
-const CALENDARIO_PATH = path.join(__dirname, 'calendario.json')
+const EQUIPOS_PATH = path.join(__dirname, '1_equipos.json')
+const CALENDARIO_PATH = path.join(__dirname, '2_calendario.json')
 
 function leerArgs() {
   const args = process.argv.slice(2)

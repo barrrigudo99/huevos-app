@@ -1,0 +1,91 @@
+[
+  {
+    "id": 1,
+    "jugado": true,
+    "jornada": 1,
+    "rival": "Manchester piti",
+    "fecha": "2026-10-19",
+    "esLocal": true,
+    "resultado": {
+      "golesNosotros": 0,
+      "golesRival": 0
+    },
+    "jugadores": [
+      {
+        "id": 1,
+        "name": "Carlos Barrientos",
+        "positions": [
+          "DEL"
+        ],
+        "number": 12,
+        "phone": "34684015410",
+        "photo": "/players/1.jpg",
+        "goles": 3,
+        "asistencias": 0,
+        "amarillas": 0,
+        "tarjetaAmarilla": false,
+        "tarjetaRoja": false
+      },
+      {
+        "id": 2,
+        "name": "Edu Alba",
+        "positions": [
+          "VOL"
+        ],
+        "number": 1,
+        "phone": "34660119994",
+        "photo": "/players/2.jpg",
+        "goles": 0,
+        "asistencias": 1,
+        "amarillas": 0,
+        "tarjetaAmarilla": false,
+        "tarjetaRoja": false
+      },
+      {
+        "id": 3,
+        "name": "Adri",
+        "positions": [
+          "LAT"
+        ],
+        "number": 2,
+        "phone": "34654650662",
+        "photo": "/players/3.jpg",
+        "goles": 1,
+        "asistencias": 0,
+        "amarillas": 0,
+        "tarjetaAmarilla": false,
+        "tarjetaRoja": true
+      },
+      {
+        "id": 4,
+        "name": "Alexander",
+        "positions": [
+          "CEN"
+        ],
+        "number": 3,
+        "phone": "34610074607",
+        "photo": "/players/4.jpg",
+        "goles": 1,
+        "asistencias": 0,
+        "amarillas": 0,
+        "tarjetaAmarilla": false,
+        "tarjetaRoja": false
+      },
+      {
+        "id": 6,
+        "name": "Artu",
+        "positions": [
+          "CEN"
+        ],
+        "number": 5,
+        "phone": "34634507343",
+        "photo": "/players/6.jpg",
+        "goles": 1,
+        "asistencias": 1,
+        "amarillas": 0,
+        "tarjetaAmarilla": false,
+        "tarjetaRoja": false
+      }
+    ]
+  }
+]

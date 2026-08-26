@@ -1,4 +1,8 @@
-const BASE = '/api'
+// Por defecto apunta al backend local (localhost:4000). Para producción
+// (Vercel) o para probar desde otro dispositivo a través de un túnel de
+// Cloudflare, define VITE_API_URL con el origen del backend (sin "/api",
+// p.ej. https://xxxx.trycloudflare.com) y reinicia `npm run dev`/redeploy.
+const BASE = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api`
 
 async function request(path, { headers, ...options } = {}) {
   const res = await fetch(`${BASE}${path}`, {
@@ -36,6 +40,19 @@ export function fetchNextMatch() {
   return request('/next-match')
 }
 
+// Próximo partido calculado a partir de simulador/2_calendario.json (el
+// siguiente sin jugar), en vez del que se guarda a mano en db.json.
+export function fetchNextMatchAuto() {
+  return request('/next-match/auto')
+}
+
+export function markMatchAsPlayed(matchId, userId) {
+  return request(`/calendario/${matchId}/jugado`, {
+    method: 'PUT',
+    headers: { 'X-User-Id': userId },
+  })
+}
+
 export function updateNextMatch(data, userId) {
   return request('/next-match', {
     method: 'PUT',
@@ -48,8 +65,44 @@ export function fetchPollStatus() {
   return request('/next-match/poll', { cache: 'no-store' })
 }
 
+// Genera de verdad la encuesta de WhatsApp (Sí/No/Duda) para el partido
+// configurado como próximo partido, vía Whapi.Cloud.
+export function generarInscripcion(userId) {
+  return request('/next-match/poll', {
+    method: 'POST',
+    headers: { 'X-User-Id': userId },
+  })
+}
+
 export function fetchLeague() {
   return request('/league')
+}
+
+export function fetchPlayerMatchStats() {
+  return request('/player-match-stats')
+}
+
+export function fetchEstadisticasPersonales() {
+  return request('/estadisticas-personales')
+}
+
+export function saveEstadisticasPersonalesPartido(matchId, jugadores, userId) {
+  return request(`/estadisticas-personales/${matchId}`, {
+    method: 'PUT',
+    headers: { 'X-User-Id': userId },
+    body: JSON.stringify({ jugadores }),
+  })
+}
+
+// Guarda el resultado final (goles a favor/en contra) de un partido en
+// simulador/estadisticas_personales.json, independiente de
+// simulador/resultados.json (la simulación de la liga).
+export function saveResultadoPartido(matchId, resultado, userId) {
+  return request(`/estadisticas-personales/${matchId}/resultado`, {
+    method: 'PUT',
+    headers: { 'X-User-Id': userId },
+    body: JSON.stringify(resultado),
+  })
 }
 
 export function fetchClub() {

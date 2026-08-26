@@ -1,16 +1,16 @@
 {
   "equipos": [
-    { "id": 1, "nombre": "Huevos FC" },
-    { "id": 2, "nombre": "Equipo 2" },
-    { "id": 3, "nombre": "Equipo 3" },
-    { "id": 4, "nombre": "Equipo 4" },
-    { "id": 5, "nombre": "Equipo 5" },
-    { "id": 6, "nombre": "Equipo 6" },
-    { "id": 7, "nombre": "Equipo 7" },
-    { "id": 8, "nombre": "Equipo 8" },
-    { "id": 9, "nombre": "Equipo 9" },
-    { "id": 10, "nombre": "Equipo 10" },
-    { "id": 11, "nombre": "Equipo 11" },
-    { "id": 12, "nombre": "Equipo 12" }
+    { "id": 1, "nombre": "LOS HUEVOS FC" },
+    { "id": 2, "nombre": "Manchester piti" },
+    { "id": 3, "nombre": "MS FC" },
+    { "id": 4, "nombre": "Los guerreros" },
+    { "id": 5, "nombre": "NBA FC" },
+    { "id": 6, "nombre": "TIPIS FC" },
+    { "id": 7, "nombre": "C.D. LOS YÉRBERNES" },
+    { "id": 8, "nombre": "Fútbol Club Descansa" },
+    { "id": 9, "nombre": "GODFATHER FC" },
+    { "id": 10, "nombre": "INTER VALLEKANO" },
+    { "id": 11, "nombre": "Las Maquinas del Chambeo F.C" },
+    { "id": 12, "nombre": "Unión Penosa CF" }
   ]
 }

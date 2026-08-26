@@ -1,0 +1,46 @@
+[
+  {
+    "convocados": [],
+    "duda": [],
+    "descartados": [],
+    "sinResponder": [],
+    "matchId": 1,
+    "rival": "Manchester piti",
+    "date": "2026-10-19",
+    "whatsappPollId": "PsoaQvxsIWnE9H8-4mgIE3eqFw-WRRUZw",
+    "updatedAt": "2026-08-24T22:55:02.941Z",
+    "generatedAt": "2026-08-24T22:55:18.728Z",
+    "votes": {
+      "34684015410": "Si"
+    },
+    "votesUpdatedAt": "2026-08-24T23:01:41.265Z"
+  },
+  {
+    "convocados": [],
+    "duda": [],
+    "descartados": [],
+    "sinResponder": [],
+    "matchId": 2,
+    "rival": "MS FC",
+    "date": "2026-10-26",
+    "whatsappPollId": "PspUZbbO923vt9E-4iUIE3eqFw-WRRUZw",
+    "updatedAt": "2026-08-24T23:01:41.268Z",
+    "generatedAt": "2026-08-24T23:02:02.178Z",
+    "votes": {
+      "34684015410": "No"
+    },
+    "votesUpdatedAt": "2026-08-25T19:21:32.498Z"
+  },
+  {
+    "convocados": [],
+    "duda": [],
+    "descartados": [],
+    "sinResponder": [],
+    "matchId": 3,
+    "rival": "Los guerreros",
+    "date": "2026-11-09",
+    "whatsappPollId": "PspJ6RYP070o08I-4qQIE3eqFw-WRRUZw",
+    "updatedAt": "2026-08-25T19:21:32.501Z",
+    "generatedAt": "2026-08-25T19:21:34.599Z"
+  }
+]

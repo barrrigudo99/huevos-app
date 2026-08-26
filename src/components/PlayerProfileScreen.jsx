@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
-import { fetchClub, fetchConvocatoriaHistory, fetchMatchEvents } from '../api'
+import { fetchClub, fetchConvocatoriaHistory, fetchPlayerMatchStats } from '../api'
 import { positionLabel } from '../data/players'
 import { calculateAttendance } from '../utils/attendance'
 import PlayerAvatar from './PlayerAvatar'
@@ -20,16 +20,16 @@ function calculateAge(birthDate) {
 export default function PlayerProfileScreen({ player, onBack }) {
   const [clubName, setClubName] = useState('')
   const [history, setHistory] = useState([])
-  const [matchEvents, setMatchEvents] = useState({})
+  const [playerMatchStats, setPlayerMatchStats] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    Promise.all([fetchClub(), fetchConvocatoriaHistory(), fetchMatchEvents()])
-      .then(([club, hist, events]) => {
+    Promise.all([fetchClub(), fetchConvocatoriaHistory(), fetchPlayerMatchStats()])
+      .then(([club, hist, stats]) => {
         setClubName(club?.name || '')
         setHistory(hist)
-        setMatchEvents(events)
+        setPlayerMatchStats(stats)
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
@@ -39,13 +39,11 @@ export default function PlayerProfileScreen({ player, onBack }) {
 
   const { pct: attendancePct } = calculateAttendance(player, history)
 
-  const playerEvents = Object.values(matchEvents)
-    .flat()
-    .filter((e) => e.playerId === player.id)
-  const goals = playerEvents.filter((e) => e.type === 'gol').length
-  const assists = playerEvents.filter((e) => e.type === 'asistencia').length
-  const yellowCards = playerEvents.filter((e) => e.type === 'tarjeta_amarilla').length
-  const redCards = playerEvents.filter((e) => e.type === 'tarjeta_roja').length
+  const stats = playerMatchStats[player.id] || {}
+  const goals = stats.goles || 0
+  const assists = stats.asistencias || 0
+  const yellowCards = stats.tarjetasAmarillas || 0
+  const redCards = stats.tarjetasRojas || 0
 
   return (
     <div className="stats">

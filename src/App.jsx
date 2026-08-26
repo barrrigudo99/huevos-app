@@ -7,7 +7,7 @@ import AlineacionScreen from './components/AlineacionScreen'
 import MarcadorScreen from './components/MarcadorScreen'
 import StatsScreen from './components/StatsScreen'
 import { roleLabel } from './data/users'
-import { fetchMatchEvents, fetchPlayers } from './api'
+import { fetchPlayerMatchStats, fetchPlayers } from './api'
 import useConvocatoria from './hooks/useConvocatoria'
 
 const TITLES = {
@@ -27,7 +27,12 @@ export default function App() {
   const [screen, setScreen] = useState('plantilla')
   const [players, setPlayers] = useState([])
   const [playersError, setPlayersError] = useState('')
-  const [matchEvents, setMatchEvents] = useState({})
+  const [playerMatchStats, setPlayerMatchStats] = useState({})
+  // Id del partido (de simulador/2_calendario.json) cuyo panel de
+  // estadísticas hay que abrir directamente al entrar en StatsScreen, tras
+  // pulsar "Anotar estadísticas" en la jornada que se esté viendo en
+  // NextMatchCard.
+  const [openMatchId, setOpenMatchId] = useState(null)
   const { votes, listaConvocados, pollLoading, pollError, pollConfigured } = useConvocatoria(players)
 
   useEffect(() => {
@@ -35,10 +40,19 @@ export default function App() {
     fetchPlayers()
       .then(setPlayers)
       .catch((err) => setPlayersError(err.message))
-    fetchMatchEvents()
-      .then(setMatchEvents)
-      .catch(() => {})
+    refreshPlayerMatchStats()
   }, [currentUser])
+
+  function refreshPlayerMatchStats() {
+    return fetchPlayerMatchStats()
+      .then(setPlayerMatchStats)
+      .catch(() => {})
+  }
+
+  function abrirEstadisticasPartido(matchId) {
+    setOpenMatchId(matchId ?? null)
+    setScreen('stats')
+  }
 
   function handleLogin(user) {
     localStorage.setItem(SESSION_KEY, JSON.stringify(user))
@@ -79,14 +93,22 @@ export default function App() {
             pollLoading={pollLoading}
             pollError={pollError}
             pollConfigured={pollConfigured}
+            onOpenStats={abrirEstadisticasPartido}
           />
         )}
         {screen === 'alineacion' && (
           <AlineacionScreen players={players} listaConvocados={listaConvocados} />
         )}
-        {screen === 'marcador' && <MarcadorScreen players={players} currentUser={currentUser} />}
+        {screen === 'marcador' && <MarcadorScreen />}
         {screen === 'stats' && (
-          <StatsScreen players={players} events={Object.values(matchEvents).flat()} />
+          <StatsScreen
+            players={players}
+            playerMatchStats={playerMatchStats}
+            currentUser={currentUser}
+            refreshPlayerMatchStats={refreshPlayerMatchStats}
+            openMatchId={openMatchId}
+            onOpenMatchHandled={() => setOpenMatchId(null)}
+          />
         )}
       </main>
       <BottomNav screen={screen} setScreen={setScreen} />

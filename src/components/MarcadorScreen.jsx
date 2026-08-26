@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
-import { addMatchEvent, deleteMatchEvent, fetchClub, fetchLeague, fetchMatchEvents } from '../api'
+import { fetchClub, fetchLeague } from '../api'
 import {
   computeStandings,
   displayTeamName,
@@ -10,32 +10,28 @@ import {
 } from '../data/league'
 import DonutChart from './DonutChart'
 
-const EVENT_TYPES = [
-  { code: 'gol', label: 'Gol' },
-  { code: 'asistencia', label: 'Asistencia' },
-  { code: 'tarjeta_amarilla', label: 'Amarilla' },
-  { code: 'tarjeta_roja', label: 'Roja' },
-]
-
-function eventTypeLabel(code) {
-  return EVENT_TYPES.find((t) => t.code === code)?.label || code
+// A partir de los "jugadores" del partido (simulador/4_resultados.json) arma
+// una fila por cada suceso (gol/asistencia/tarjeta) para el feed de abajo.
+function matchEventRows(match) {
+  const rows = []
+  for (const j of match.jugadores || []) {
+    for (let i = 0; i < (j.goles || 0); i++) rows.push({ key: `${j.id}-gol-${i}`, name: j.name, label: 'Gol' })
+    for (let i = 0; i < (j.asistencias || 0); i++) {
+      rows.push({ key: `${j.id}-asis-${i}`, name: j.name, label: 'Asistencia' })
+    }
+    if (j.tarjetaAmarilla) rows.push({ key: `${j.id}-amarilla`, name: j.name, label: 'Amarilla' })
+    if (j.tarjetaRoja) rows.push({ key: `${j.id}-roja`, name: j.name, label: 'Roja' })
+  }
+  return rows
 }
 
-export default function MarcadorScreen({ players, currentUser }) {
+export default function MarcadorScreen() {
   const [league, setLeague] = useState(null)
   const [clubName, setClubName] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedTeam, setSelectedTeam] = useState(null)
   const [selectedMatch, setSelectedMatch] = useState(null)
-
-  const [matchEvents, setMatchEvents] = useState({})
-  const [eventsLoading, setEventsLoading] = useState(false)
-  const [eventsError, setEventsError] = useState('')
-  const [eventPlayerId, setEventPlayerId] = useState('')
-  const [eventSaving, setEventSaving] = useState(false)
-
-  const isEntrenador = currentUser?.role === 'entrenador'
 
   useEffect(() => {
     fetchLeague()
@@ -47,52 +43,13 @@ export default function MarcadorScreen({ players, currentUser }) {
       .catch(() => {})
   }, [])
 
-  useEffect(() => {
-    if (!selectedMatch || !isOurMatch(selectedMatch)) return
-    setEventsLoading(true)
-    setEventsError('')
-    fetchMatchEvents()
-      .then(setMatchEvents)
-      .catch((err) => setEventsError(err.message))
-      .finally(() => setEventsLoading(false))
-  }, [selectedMatch])
-
-  async function handleAddEvent(type) {
-    if (!selectedMatch || !eventPlayerId) return
-    setEventSaving(true)
-    setEventsError('')
-    try {
-      const list = await addMatchEvent(
-        selectedMatch.id,
-        { playerId: Number(eventPlayerId), type },
-        currentUser.id
-      )
-      setMatchEvents((prev) => ({ ...prev, [selectedMatch.id]: list }))
-    } catch (err) {
-      setEventsError(err.message)
-    } finally {
-      setEventSaving(false)
-    }
-  }
-
-  async function handleDeleteEvent(eventId) {
-    if (!selectedMatch) return
-    setEventsError('')
-    try {
-      const list = await deleteMatchEvent(selectedMatch.id, eventId, currentUser.id)
-      setMatchEvents((prev) => ({ ...prev, [selectedMatch.id]: list }))
-    } catch (err) {
-      setEventsError(err.message)
-    }
-  }
-
   if (loading) return <p className="hint">Cargando clasificación...</p>
   if (error) return <p className="auth-error">No se pudo cargar la liga: {error}</p>
   if (!league) return null
 
   if (selectedMatch) {
     const ourMatch = isOurMatch(selectedMatch)
-    const events = matchEvents[selectedMatch.id] || []
+    const events = matchEventRows(selectedMatch)
     return (
       <div className="match">
         <button className="btn-outline small" onClick={() => setSelectedMatch(null)}>
@@ -109,54 +66,16 @@ export default function MarcadorScreen({ players, currentUser }) {
         {ourMatch && (
           <>
             <p className="hint">Sucesos del partido</p>
-            {eventsLoading && <p className="hint">Cargando sucesos...</p>}
-            {eventsError && <p className="auth-error">{eventsError}</p>}
-            {!eventsLoading && (
-              <div className="feed">
-                {events.length === 0 && <p className="empty">Todavía no hay sucesos registrados.</p>}
-                {events.map((ev) => {
-                  const player = players.find((p) => p.id === ev.playerId)
-                  return (
-                    <div className="feed-row" key={ev.id}>
-                      <span>
-                        {player?.name || 'Jugador'} · {eventTypeLabel(ev.type)}
-                      </span>
-                      {isEntrenador && (
-                        <button className="btn-outline small" onClick={() => handleDeleteEvent(ev.id)}>
-                          Eliminar
-                        </button>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            {isEntrenador && (
-              <div className="card form">
-                <select value={eventPlayerId} onChange={(e) => setEventPlayerId(e.target.value)}>
-                  <option value="">Selecciona jugador</option>
-                  {players.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="event-grid">
-                  {EVENT_TYPES.map((t) => (
-                    <button
-                      key={t.code}
-                      type="button"
-                      className="event-btn"
-                      disabled={!eventPlayerId || eventSaving}
-                      onClick={() => handleAddEvent(t.code)}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
+            <div className="feed">
+              {events.length === 0 && <p className="empty">Todavía no hay sucesos registrados.</p>}
+              {events.map((ev) => (
+                <div className="feed-row" key={ev.key}>
+                  <span>
+                    {ev.name} · {ev.label}
+                  </span>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
           </>
         )}
       </div>

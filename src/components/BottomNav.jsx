@@ -1,22 +1,23 @@
-import { Users, LayoutGrid, Trophy, BarChart2 } from 'lucide-react'
+import { LayoutGrid, Trophy, BarChart2 } from 'lucide-react'
+import plantillaIcon from './icons/icon_1024.ico'
 
 const ITEMS = [
-  { key: 'plantilla', label: 'Plantilla', Icon: Users },
-  { key: 'alineacion', label: 'Once', Icon: LayoutGrid },
-  { key: 'marcador', label: 'Marcador', Icon: Trophy },
-  { key: 'stats', label: 'Stats', Icon: BarChart2 },
+  { key: 'plantilla', label: 'Plantilla', icon: <img src={plantillaIcon} alt="" className="nav-icon-img" /> },
+  { key: 'alineacion', label: 'Once', icon: <LayoutGrid size={20} /> },
+  { key: 'marcador', label: 'Marcador', icon: <Trophy size={20} /> },
+  { key: 'stats', label: 'Stats', icon: <BarChart2 size={20} /> },
 ]
 
 export default function BottomNav({ screen, setScreen }) {
   return (
     <nav className="bottom-nav">
-      {ITEMS.map(({ key, label, Icon }) => (
+      {ITEMS.map(({ key, label, icon }) => (
         <button
           key={key}
           className={`nav-btn ${screen === key ? 'active' : ''}`}
           onClick={() => setScreen(key)}
         >
-          <Icon size={20} />
+          {icon}
           <span>{label}</span>
         </button>
       ))}

@@ -63,10 +63,19 @@ export function matchesForTeam(partidos, team) {
     .sort((a, b) => a.jornada - b.jornada)
 }
 
+// Igual que matchesForTeam pero sin filtrar por "jugado": se usa para
+// navegar por todas las jornadas del calendario (2_calendario.json), donde
+// ese campo no debe condicionar qué partidos se pueden ver/anotar.
+export function sortedMatchesForTeam(partidos, team) {
+  return partidos
+    .filter((p) => p.equipo_local === team || p.equipo_visitante === team)
+    .sort((a, b) => a.jornada - b.jornada)
+}
+
 // Nuestro equipo real dentro de la simulación de liga. Debe coincidir con
 // el "nombre" del equipo id=1 en simulador/1_equipos.json (MI_EQUIPO_ID en
 // los generadores del simulador) — hoy es el nombre del club, no "Equipo 1".
-export const OUR_TEAM = 'Huevos FC'
+export const OUR_TEAM = 'LOS HUEVOS FC'
 
 export function isOurMatch(partido) {
   return partido.equipo_local === OUR_TEAM || partido.equipo_visitante === OUR_TEAM

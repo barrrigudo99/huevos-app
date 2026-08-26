@@ -1,0 +1,79 @@
+[
+
+  {
+    "jornada": 1,
+    "partidos": [
+      {"local": "C.D. LOS YÉRBERNES", "visitante": "Unión Penosa CF", "goles_local": 7, "goles_visitante": 1, "fecha": "19/10/2024", "hora": "15:00", "campo": "Campo F-7 Wilfred Agbonavbare"},
+      {"local": "Fútbol Club Descansa", "visitante": "TIPIS FC", "goles_local": 1, "goles_visitante": 6, "fecha": "19/10/2024", "hora": "16:00", "campo": "Campo F-7 Wilfred Agbonavbare"},
+      {"local": "GODFATHER FC", "visitante": "NBA FC", "goles_local": 9, "goles_visitante": 3, "fecha": "19/10/2024", "hora": "17:00", "campo": "Campo F-7 Wilfred Agbonavbare"},
+      {"local": "INTER VALLEKANO", "visitante": "Los guerreros", "goles_local": 3, "goles_visitante": 2, "fecha": "19/10/2024", "hora": "18:00", "campo": "Campo F-7 Wilfred Agbonavbare"},
+      {"local": "Las Maquinas del Chambeo F.C", "visitante": "MS FC", "goles_local": 0, "goles_visitante": 8, "fecha": "19/10/2024", "hora": "19:00", "campo": "Campo F-7 Wilfred Agbonavbare"},
+      {"local": "LOS HUEVOS F.C", "visitante": "Manchester piti", "goles_local": 4, "goles_visitante": 0, "fecha": "19/10/2024", "hora": "20:00", "campo": "Campo F-7 Wilfred Agbonavbare"}
+    ],
+    "clasificacion": [
+      {"posicion": 1, "equipo": "MS FC", "puntos": 3, "j": 1, "g": 1, "e": 0, "p": 0, "tf": 8, "tc": 0},
+      {"posicion": 2, "equipo": "C.D. LOS YÉRBERNES", "puntos": 3, "j": 1, "g": 1, "e": 0, "p": 0, "tf": 7, "tc": 1},
+      {"posicion": 3, "equipo": "GODFATHER FC", "puntos": 3, "j": 1, "g": 1, "e": 0, "p": 0, "tf": 9, "tc": 3},
+      {"posicion": 4, "equipo": "TIPIS FC", "puntos": 3, "j": 1, "g": 1, "e": 0, "p": 0, "tf": 6, "tc": 1},
+      {"posicion": 5, "equipo": "LOS HUEVOS F.C", "puntos": 3, "j": 1, "g": 1, "e": 0, "p": 0, "tf": 4, "tc": 0},
+      {"posicion": 6, "equipo": "INTER VALLEKANO", "puntos": 3, "j": 1, "g": 1, "e": 0, "p": 0, "tf": 3, "tc": 2},
+      {"posicion": 7, "equipo": "Los guerreros", "puntos": 0, "j": 1, "g": 0, "e": 0, "p": 1, "tf": 2, "tc": 3},
+      {"posicion": 8, "equipo": "Manchester piti", "puntos": 0, "j": 1, "g": 0, "e": 0, "p": 1, "tf": 0, "tc": 4},
+      {"posicion": 9, "equipo": "Fútbol Club Descansa", "puntos": 0, "j": 1, "g": 0, "e": 0, "p": 1, "tf": 1, "tc": 6},
+      {"posicion": 10, "equipo": "NBA FC", "puntos": 0, "j": 1, "g": 0, "e": 0, "p": 1, "tf": 3, "tc": 9},
+      {"posicion": 11, "equipo": "Unión Penosa CF", "puntos": 0, "j": 1, "g": 0, "e": 0, "p": 1, "tf": 1, "tc": 7},
+      {"posicion": 12, "equipo": "Las Maquinas del Chambeo F.C", "puntos": 0, "j": 1, "g": 0, "e": 0, "p": 1, "tf": 0, "tc": 8}
+    ]
+  },
+  {
+    "jornada": 2,
+    "partidos": [
+      {"local": "MS FC", "visitante": "LOS HUEVOS FC", "goles_local": 4, "goles_visitante": 1, "fecha": "26/10/2024", "hora": "15:00", "campo": "Campo F-7 Wilfred Agbonavbare"},
+      {"local": "Unión Penosa CF", "visitante": "Manchester piti", "goles_local": 3, "goles_visitante": 2, "fecha": "26/10/2024", "hora": "16:00", "campo": "Campo F-7 Wilfred Agbonavbare"},
+      {"local": "Los guerreros", "visitante": "Las Maquinas del Chambeo F.C", "goles_local": 3, "goles_visitante": 4, "fecha": "26/10/2024", "hora": "17:00", "campo": "Campo F-7 Wilfred Agbonavbare"},
+      {"local": "NBA FC", "visitante": "INTER VALLEKANO", "goles_local": 9, "goles_visitante": 2, "fecha": "26/10/2024", "hora": "18:00", "campo": "Campo F-7 Wilfred Agbonavbare"},
+      {"local": "TIPIS FC", "visitante": "GODFATHER FC", "goles_local": 0, "goles_visitante": 2, "fecha": "26/10/2024", "hora": "19:00", "campo": "Campo F-7 Wilfred Agbonavbare"},
+      {"local": "C.D. LOS YÉRBERNES", "visitante": "Fútbol Club Descansa", "goles_local": 4, "goles_visitante": 1, "fecha": "26/10/2024", "hora": "20:00", "campo": "Campo F-7 Wilfred Agbonavbare"}
+    ],
+    "clasificacion": [
+      {"posicion": 1, "equipo": "MS FC", "puntos": 6, "j": 2, "g": 2, "e": 0, "p": 0, "tf": 12, "tc": 1},
+      {"posicion": 2, "equipo": "C.D. LOS YÉRBERNES", "puntos": 6, "j": 2, "g": 2, "e": 0, "p": 0, "tf": 11, "tc": 2},
+      {"posicion": 3, "equipo": "GODFATHER FC", "puntos": 6, "j": 2, "g": 2, "e": 0, "p": 0, "tf": 11, "tc": 3},
+      {"posicion": 4, "equipo": "NBA FC", "puntos": 3, "j": 2, "g": 1, "e": 0, "p": 1, "tf": 12, "tc": 11},
+      {"posicion": 5, "equipo": "TIPIS FC", "puntos": 3, "j": 2, "g": 1, "e": 0, "p": 1, "tf": 6, "tc": 3},
+      {"posicion": 6, "equipo": "LOS HUEVOS FC", "puntos": 3, "j": 2, "g": 1, "e": 0, "p": 1, "tf": 5, "tc": 4},
+      {"posicion": 7, "equipo": "Unión Penosa CF", "puntos": 3, "j": 2, "g": 1, "e": 0, "p": 1, "tf": 4, "tc": 8},
+      {"posicion": 8, "equipo": "INTER VALLEKANO", "puntos": 3, "j": 2, "g": 1, "e": 0, "p": 1, "tf": 5, "tc": 11},
+      {"posicion": 9, "equipo": "Las Maquinas del Chambeo F.C", "puntos": 3, "j": 2, "g": 1, "e": 0, "p": 1, "tf": 4, "tc": 11},
+      {"posicion": 10, "equipo": "Los guerreros", "puntos": 0, "j": 2, "g": 0, "e": 0, "p": 2, "tf": 5, "tc": 7},
+      {"posicion": 11, "equipo": "Manchester piti", "puntos": 0, "j": 2, "g": 0, "e": 0, "p": 2, "tf": 2, "tc": 7},
+      {"posicion": 12, "equipo": "Fútbol Club Descansa", "puntos": 0, "j": 2, "g": 0, "e": 0, "p": 2, "tf": 2, "tc": 10}
+    ]
+  },
+  {
+    "jornada": 3,
+    "partidos": [
+      {"local": "INTER VALLEKANO", "visitante": "TIPIS FC", "goles_local": 0, "goles_visitante": 6, "fecha": "09/11/2024", "hora": "15:00", "campo": "Campo F-7 Wilfred Agbonavbare"},
+      {"local": "GODFATHER FC", "visitante": "C.D. LOS YÉRBERNES", "goles_local": 2, "goles_visitante": 1, "fecha": "09/11/2024", "hora": "16:00", "campo": "Campo F-7 Wilfred Agbonavbare"},
+      {"local": "Fútbol Club Descansa", "visitante": "Unión Penosa CF", "goles_local": 2, "goles_visitante": 3, "fecha": "09/11/2024", "hora": "17:00", "campo": "Campo F-7 Wilfred Agbonavbare"},
+      {"local": "Las Maquinas del Chambeo F.C", "visitante": "NBA FC", "goles_local": 1, "goles_visitante": 3, "fecha": "09/11/2024", "hora": "18:00", "campo": "Campo F-7 Wilfred Agbonavbare"},
+      {"local": "LOS HUEVOS F.C", "visitante": "Los guerreros", "goles_local": 8, "goles_visitante": 0, "fecha": "09/11/2024", "hora": "19:00", "campo": "Campo F-7 Wilfred Agbonavbare"},
+      {"local": "Manchester piti", "visitante": "MS FC", "goles_local": 3, "goles_visitante": 7, "fecha": "09/11/2024", "hora": "20:00", "campo": "Campo F-7 Wilfred Agbonavbare"}
+    ],
+    "clasificacion": [
+      {"posicion": 1, "equipo": "MS FC", "puntos": 9, "j": 3, "g": 3, "e": 0, "p": 0, "tf": 19, "tc": 4},
+      {"posicion": 2, "equipo": "GODFATHER FC", "puntos": 9, "j": 3, "g": 3, "e": 0, "p": 0, "tf": 13, "tc": 4},
+      {"posicion": 3, "equipo": "C.D. LOS YÉRBERNES", "puntos": 6, "j": 3, "g": 2, "e": 0, "p": 1, "tf": 12, "tc": 4},
+      {"posicion": 4, "equipo": "TIPIS FC", "puntos": 6, "j": 3, "g": 2, "e": 0, "p": 1, "tf": 12, "tc": 3},
+      {"posicion": 5, "equipo": "LOS HUEVOS F.C", "puntos": 6, "j": 3, "g": 2, "e": 0, "p": 1, "tf": 13, "tc": 4},
+      {"posicion": 6, "equipo": "NBA FC", "puntos": 6, "j": 3, "g": 2, "e": 0, "p": 1, "tf": 15, "tc": 12},
+      {"posicion": 7, "equipo": "Unión Penosa CF", "puntos": 6, "j": 3, "g": 2, "e": 0, "p": 1, "tf": 7, "tc": 11},
+      {"posicion": 8, "equipo": "Las Maquinas del Chambeo F.C", "puntos": 3, "j": 3, "g": 1, "e": 0, "p": 2, "tf": 5, "tc": 14},
+      {"posicion": 9, "equipo": "INTER VALLEKANO", "puntos": 3, "j": 3, "g": 1, "e": 0, "p": 2, "tf": 5, "tc": 17},
+      {"posicion": 10, "equipo": "Manchester piti", "puntos": 0, "j": 3, "g": 0, "e": 0, "p": 3, "tf": 5, "tc": 14},
+      {"posicion": 11, "equipo": "Fútbol Club Descansa", "puntos": 0, "j": 3, "g": 0, "e": 0, "p": 3, "tf": 4, "tc": 13},
+      {"posicion": 12, "equipo": "Los guerreros", "puntos": 0, "j": 3, "g": 0, "e": 0, "p": 3, "tf": 5, "tc": 15}
+    ]
+  }
+
+]
