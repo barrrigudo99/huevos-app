@@ -4,7 +4,7 @@
     "jornada": 1,
     "fecha": "2026-10-19",
     "equipo_local": "LOS HUEVOS FC",
-    "equipo_visitante": "Manchester piti",
+    "equipo_visitante": "Manchester pitiis",
     "resultado": null,
     "ganador": null,
     "jugado": true
@@ -17,7 +17,7 @@
     "equipo_visitante": "LOS HUEVOS FC",
     "resultado": null,
     "ganador": null,
-    "jugado": false
+    "jugado": true
   },
   {
     "id": 3,

@@ -6,17 +6,21 @@
   "scripts": {
     "dev": "vite",
     "server": "node --env-file-if-exists=.env server/index.js",
+    "migrate": "node --env-file-if-exists=.env server/migrate-to-supabase.mjs",
     "dev:full": "concurrently -n API,WEB -c blue,green \"npm:server\" \"npm:dev\"",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.109.0",
+    "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.0.3",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "lucide-react": "^0.383.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",

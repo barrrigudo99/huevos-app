@@ -1,16 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { fetchCalendario, fetchConvocatoriaHistory, fetchConvocatoriaPorFecha } from '../api'
-import { OUR_TEAM } from '../data/league'
+import { fetchConvocatoriaHistory } from '../api'
 import { calculateAttendance } from '../utils/attendance'
 import PlayerAvatar from './PlayerAvatar'
-
-function rivalDe(partido) {
-  return partido.equipo_local === OUR_TEAM ? partido.equipo_visitante : partido.equipo_local
-}
-
-function formatFecha(fecha) {
-  return new Date(fecha).toLocaleDateString('es-ES')
-}
+import RatingPanel from './RatingPanel'
 
 const SLOTS = [
   { id: 'gk', pos: 'POR', x: 50, y: 90 },
@@ -55,16 +47,21 @@ function generateLineup(pool, slots, attendanceById) {
   return { assignments, offPosition }
 }
 
-export default function AlineacionScreen({ players, listaConvocados }) {
+export default function AlineacionScreen({
+  players,
+  convocadosDelPartido,
+  currentUser,
+  matchId,
+  jugado = false,
+  jornada,
+  rival,
+}) {
   const [assignments, setAssignments] = useState({})
   const [offPositionSlots, setOffPositionSlots] = useState(new Set())
-  const [convocados, setConvocados] = useState(() => listaConvocados.map((p) => p.id))
+  const [convocados, setConvocados] = useState(() => convocadosDelPartido.map((p) => p.id))
   const [history, setHistory] = useState([])
-
-  const [calendario, setCalendario] = useState([])
-  const [fechaSeleccionada, setFechaSeleccionada] = useState('')
-  const [votosFechaLoading, setVotosFechaLoading] = useState(false)
-  const [votosFechaError, setVotosFechaError] = useState('')
+  // 'lineup' = la pizarra de siempre; 'rating' = panel "Valorar partido".
+  const [view, setView] = useState('lineup')
 
   useEffect(() => {
     fetchConvocatoriaHistory()
@@ -72,34 +69,27 @@ export default function AlineacionScreen({ players, listaConvocados }) {
       .catch(() => {})
   }, [])
 
+  // La convocatoria editable de la pizarra sigue a la jornada mostrada en
+  // NextMatchCard (convocadosDelPartido, ya sincronizada por el padre).
   useEffect(() => {
-    fetchCalendario()
-      .then((partidos) => {
-        const nuestros = partidos.filter(
-          (p) => p.equipo_local === OUR_TEAM || p.equipo_visitante === OUR_TEAM
-        )
-        setCalendario(nuestros)
-      })
-      .catch(() => {})
-  }, [])
+    setConvocados(convocadosDelPartido.map((p) => p.id))
+  }, [convocadosDelPartido])
 
-  useEffect(() => {
-    if (!fechaSeleccionada) {
-      setConvocados(listaConvocados.map((p) => p.id))
-      return
-    }
-    setVotosFechaLoading(true)
-    setVotosFechaError('')
-    fetchConvocatoriaPorFecha(fechaSeleccionada)
-      .then((res) => {
-        const votosFecha = res.votes || {}
-        setConvocados(
-          players.filter((p) => p.phone && votosFecha[p.phone] === 'Si').map((p) => p.id)
-        )
-      })
-      .catch((err) => setVotosFechaError(err.message))
-      .finally(() => setVotosFechaLoading(false))
-  }, [fechaSeleccionada])
+  // Jugador de la plantilla que es el usuario actual: player_id del backend
+  // si lo trae, y si no, emparejado por nombre (mismo criterio que App.jsx).
+  const selfPlayerId =
+    currentUser?.player_id ??
+    players.find(
+      (p) => p.name.trim().toLowerCase() === currentUser?.name?.trim().toLowerCase()
+    )?.id ??
+    null
+
+  // A quién se lista para valorar: los convocados 'Sí' de esta jornada; si el
+  // usuario es jugador, se excluye a sí mismo (el entrenador ve a todos).
+  const playersToRate =
+    currentUser?.role === 'entrenador'
+      ? convocadosDelPartido
+      : convocadosDelPartido.filter((p) => p.id !== selfPlayerId)
 
   const convocadoPlayers = useMemo(
     () => players.filter((p) => convocados.includes(p.id)),
@@ -147,27 +137,31 @@ export default function AlineacionScreen({ players, listaConvocados }) {
     })
   }
 
+  if (view === 'rating') {
+    return (
+      <RatingPanel
+        matchId={matchId}
+        playersToRate={playersToRate}
+        currentUser={currentUser}
+        jornada={jornada}
+        rival={rival}
+        onBack={() => setView('lineup')}
+      />
+    )
+  }
+
   return (
     <div className="pitch-wrap">
       <div className="plantilla-toolbar">
-        <select
-          className="date-filter"
-          value={fechaSeleccionada}
-          onChange={(e) => setFechaSeleccionada(e.target.value)}
+        <button
+          type="button"
+          className="rate-match-btn"
+          disabled={!jugado}
+          onClick={() => setView('rating')}
         >
-          <option value="">Convocatoria actual</option>
-          {calendario.map((p) => (
-            <option key={p.id} value={p.fecha}>
-              J{p.jornada} · {formatFecha(p.fecha)} vs {rivalDe(p)}
-            </option>
-          ))}
-        </select>
+          {jugado ? 'Valorar partido' : 'Disponible tras el partido'}
+        </button>
       </div>
-
-      {votosFechaLoading && <p className="hint">Consultando convocatoria simulada...</p>}
-      {!votosFechaLoading && votosFechaError && (
-        <p className="auth-error">No se pudo consultar la convocatoria simulada: {votosFechaError}</p>
-      )}
 
       <p className="hint">
         Convocatoria ({convocadoPlayers.length}/{players.length})

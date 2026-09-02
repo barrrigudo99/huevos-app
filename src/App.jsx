@@ -3,7 +3,7 @@ import { LogOut } from 'lucide-react'
 import BottomNav from './components/BottomNav'
 import LoginScreen from './components/LoginScreen'
 import PlantillaScreen from './components/PlantillaScreen'
-import AlineacionScreen from './components/AlineacionScreen'
+import PlayerProfileScreen from './components/PlayerProfileScreen'
 import MarcadorScreen from './components/MarcadorScreen'
 import StatsScreen from './components/StatsScreen'
 import { roleLabel } from './data/users'
@@ -12,7 +12,7 @@ import useConvocatoria from './hooks/useConvocatoria'
 
 const TITLES = {
   plantilla: 'Plantilla',
-  alineacion: 'Alineación',
+  perfil: 'Perfil',
   marcador: 'Marcador',
   stats: 'Estadísticas',
 }
@@ -33,7 +33,12 @@ export default function App() {
   // pulsar "Anotar estadísticas" en la jornada que se esté viendo en
   // NextMatchCard.
   const [openMatchId, setOpenMatchId] = useState(null)
-  const { votes, listaConvocados, pollLoading, pollError, pollConfigured } = useConvocatoria(players)
+  const { votes, pollLoading, pollError, pollConfigured } = useConvocatoria()
+  // No hay vínculo formal cuenta↔jugador en el backend (users y players son
+  // colecciones con ids independientes), así que se empareja por nombre.
+  const currentUserPlayer = players.find(
+    (p) => p.name.trim().toLowerCase() === currentUser?.name?.trim().toLowerCase()
+  )
 
   useEffect(() => {
     if (!currentUser) return
@@ -89,15 +94,20 @@ export default function App() {
             setPlayers={setPlayers}
             currentUser={currentUser}
             votes={votes}
-            listaConvocados={listaConvocados}
             pollLoading={pollLoading}
             pollError={pollError}
             pollConfigured={pollConfigured}
             onOpenStats={abrirEstadisticasPartido}
           />
         )}
-        {screen === 'alineacion' && (
-          <AlineacionScreen players={players} listaConvocados={listaConvocados} />
+        {screen === 'perfil' && (
+          currentUserPlayer ? (
+            <PlayerProfileScreen player={currentUserPlayer} currentUser={currentUser} />
+          ) : (
+            <p className="hint">
+              No se encontró ningún jugador de la plantilla llamado "{currentUser.name}".
+            </p>
+          )
         )}
         {screen === 'marcador' && <MarcadorScreen />}
         {screen === 'stats' && (

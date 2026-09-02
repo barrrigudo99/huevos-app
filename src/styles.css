@@ -8,6 +8,9 @@
   --border: #dedcd4;
   --accent: #0f6e56;
   --accent-bg: #e1f5ee;
+  --gold: #c9971f;
+  --gold-bg: #fbf1dc;
+  --star-empty: #c9c7bd;
   --radius: 10px;
 }
 
@@ -25,10 +28,12 @@ body {
 .app {
   max-width: 420px;
   margin: 0 auto;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background: var(--surface-1);
+  overflow: hidden;
 }
 
 .app-header {
@@ -137,6 +142,36 @@ body {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* Botón "Valorar partido" del sheet de Alineación (ocupa el hueco que antes
+   tenía el desplegable de convocatorias). */
+.rate-match-btn {
+  max-width: 260px;
+  width: 100%;
+  padding: 9px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background-color: var(--surface-1);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(28, 28, 26, 0.06);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.rate-match-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background-color: var(--accent-bg);
+}
+.rate-match-btn:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+.rate-match-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .card {
@@ -636,6 +671,7 @@ select {
   color: white;
   box-shadow: 0 6px 20px rgba(15, 110, 86, 0.28);
   margin-bottom: 4px;
+  cursor: pointer;
 }
 .next-match-card::after {
   content: '';
@@ -732,6 +768,29 @@ select {
   font-weight: 700;
   opacity: 0.7;
   flex: none;
+}
+.next-match-score-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.next-match-status-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.next-match-status-badge-played {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.next-match-status-badge-pending {
+  background: rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.75);
 }
 .next-match-meta {
   display: flex;
@@ -887,6 +946,159 @@ select {
   cursor: default;
 }
 
+/* --- RatingPanel / RatingPanelRow (Valorar partido) --- */
+
+.rating-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rating-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.rating-panel-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+.rating-panel-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: -4px 0 4px;
+}
+.rating-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Pestañas por criterio (Impacto / Esfuerzo / Equipo / Liderazgo) */
+.rating-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.rating-tab {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+}
+.rating-tab.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.rating-tab-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 6px 0 10px;
+}
+
+/* Cabecera de la sección MVP */
+.rating-panel-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.rating-panel-section-title svg {
+  color: var(--gold);
+}
+.rating-panel-row {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rating-panel-player {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rating-panel-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rating-panel-number {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.rating-stars {
+  display: flex;
+  gap: 4px;
+}
+.rating-star {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: color 0.12s ease, transform 0.12s ease;
+}
+.rating-star:hover:not(:disabled) {
+  transform: scale(1.12);
+}
+.rating-star.active {
+  color: var(--accent);
+}
+.rating-star:disabled {
+  cursor: not-allowed;
+}
+
+/* Sección MVP: estrella dorada de selección única */
+.mvp-row.selected {
+  background: var(--gold-bg);
+  border-color: var(--gold);
+}
+.mvp-star {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--star-empty);
+  transition: color 0.12s ease, transform 0.12s ease;
+}
+.mvp-star:hover:not(:disabled) {
+  transform: scale(1.12);
+}
+.mvp-star.active {
+  color: var(--gold);
+}
+.mvp-star:disabled {
+  cursor: not-allowed;
+}
+
 /* --- MatchResultPanel --- */
 
 .result-panel-score {
@@ -920,6 +1132,186 @@ select {
   cursor: pointer;
   font-size: 13px;
 }
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+}
+.sheet-panel {
+  width: 100%;
+  max-width: 420px;
+  max-height: 85vh;
+  background: var(--surface-1);
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: sheet-slide-up 0.2s ease-out;
+}
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.sheet-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+.sheet-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+}
+.sheet-close:hover {
+  color: var(--accent);
+}
+.sheet-body {
+  padding: 16px;
+  overflow-y: auto;
+}
+@keyframes sheet-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
 .stats-match-picker-item:hover {
   border-color: var(--accent);
+}
+/* Ya tiene estadísticas cargadas (status 'played'): solo aviso visual, sigue
+   siendo clicable para reabrir/editar sus estadísticas. */
+.stats-match-picker-item-played {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* PlayerProfileScreen (rediseño con pestañas Estadísticas/Información).
+   Layout puro aquí; los colores/tipografía/medidas de la identidad de marca
+   aprobada van en style={{}} inline en el propio componente, no aquí. */
+.profile-card {
+  padding-top: 4px;
+}
+.profile-header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.profile-avatar-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.profile-tabbar {
+  display: flex;
+  margin-bottom: 20px;
+  padding: 4px;
+  border-radius: 9999px;
+}
+.profile-tab {
+  flex: 1 1 0%;
+  border-radius: 9999px;
+}
+.profile-wheel-card {
+  border-radius: 16px;
+  margin-bottom: 20px;
+  padding: 16px 8px 4px;
+}
+.profile-wheel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 12px;
+  margin-bottom: 4px;
+}
+.profile-attendance {
+  margin-bottom: 20px;
+}
+.profile-attendance-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.profile-progress-track {
+  width: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+.profile-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+}
+.profile-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 20px;
+}
+.profile-stats-cell-left {
+  padding-right: 16px;
+}
+.profile-stats-cell-right {
+  padding-left: 16px;
+}
+.profile-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+}
+.profile-stat-value {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.profile-star-rating {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.profile-field {
+  margin-bottom: 16px;
+}
+.profile-field-control {
+  margin-top: 4px;
+}
+.profile-photo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.profile-photo-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.profile-password-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  margin-bottom: 4px;
+}
+.profile-save-btn {
+  width: 100%;
+  border-radius: 12px;
 }

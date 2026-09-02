@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { POSITIONS, positionLabel } from '../data/players'
 import { OUR_TEAM, sortedMatchesForTeam } from '../data/league'
 import {
@@ -15,6 +15,8 @@ import {
 import PlayerProfileScreen from './PlayerProfileScreen'
 import PlayerAvatar from './PlayerAvatar'
 import NextMatchCard from './NextMatchCard'
+import AlineacionScreen from './AlineacionScreen'
+import BottomSheet from './BottomSheet'
 
 function voteStatusClass(vote) {
   if (vote === 'Si') return 'status-dot-green'
@@ -32,7 +34,13 @@ function rivalDe(partido) {
   return partido.equipo_local === OUR_TEAM ? partido.equipo_visitante : partido.equipo_local
 }
 
-export default function PlantillaScreen({ players, setPlayers, currentUser, votes, onOpenStats }) {
+export default function PlantillaScreen({
+  players,
+  setPlayers,
+  currentUser,
+  votes,
+  onOpenStats,
+}) {
   const isEntrenador = currentUser.role === 'entrenador'
 
   const [showForm, setShowForm] = useState(false)
@@ -41,6 +49,7 @@ export default function PlantillaScreen({ players, setPlayers, currentUser, vote
   const [saving, setSaving] = useState(false)
 
   const [selectedPlayer, setSelectedPlayer] = useState(null)
+  const [showLineupPanel, setShowLineupPanel] = useState(false)
 
   const [nextMatch, setNextMatch] = useState(null)
   // Partido que se muestra en la tarjeta destacada por defecto, calculado en
@@ -116,6 +125,7 @@ export default function PlantillaScreen({ players, setPlayers, currentUser, vote
         rival: rivalDe(partidoNavegado),
         date: partidoNavegado.fecha,
         esLocal: partidoNavegado.equipo_local === OUR_TEAM,
+        jugado: partidoNavegado.jugado,
       }
     : proximoPartido
   const hasPrevMatch = matchIndex !== null && matchIndex > 0
@@ -164,6 +174,16 @@ export default function PlantillaScreen({ players, setPlayers, currentUser, vote
       .catch((err) => setConvocatoriaError(err.message))
       .finally(() => setConvocatoriaLoading(false))
   }, [partidoMostrado?.date])
+
+  // Convocados (Sí) del partido que se está mostrando en NextMatchCard,
+  // derivados de `convocatoria` — el mismo mecanismo que ya usa la lista de
+  // jugadores de abajo. Sustituye a listaConvocados/useConvocatoria (que
+  // seguía siempre a app_state.active_matchday_id, no a la jornada navegada
+  // con las flechas) como fuente para el sheet-panel de Alineación.
+  const convocadosDelPartido = useMemo(
+    () => players.filter((p) => p.phone && convocatoria[p.phone] === 'Si'),
+    [players, convocatoria]
+  )
 
   function handlePrevMatch() {
     setMatchIndex((i) => Math.max(0, (i ?? 0) - 1))
@@ -226,7 +246,11 @@ export default function PlantillaScreen({ players, setPlayers, currentUser, vote
     setMatchSaving(true)
     setMatchError('')
     try {
-      const match = await updateNextMatch(matchForm, currentUser.id)
+      // Si rival/fecha vienen precargados de la jornada que se está viendo
+      // en NextMatchCard (partidoMostrado), se manda también su matchId
+      // para que el backend identifique la jornada directamente en vez de
+      // comparar rival/fecha por texto (ver server/index.js, PUT /api/next-match).
+      const match = await updateNextMatch({ ...matchForm, matchId: partidoMostrado?.matchId }, currentUser.id)
       setNextMatch(match)
       setShowMatchForm(false)
     } catch (err) {
@@ -269,7 +293,13 @@ export default function PlantillaScreen({ players, setPlayers, currentUser, vote
   }
 
   if (selectedPlayer) {
-    return <PlayerProfileScreen player={selectedPlayer} onBack={() => setSelectedPlayer(null)} />
+    return (
+      <PlayerProfileScreen
+        player={selectedPlayer}
+        onBack={() => setSelectedPlayer(null)}
+        currentUser={currentUser}
+      />
+    )
   }
 
   return (
@@ -281,11 +311,26 @@ export default function PlantillaScreen({ players, setPlayers, currentUser, vote
         players={players}
         currentUser={currentUser}
         onOpenStats={handleOpenStats}
+        onOpenLineup={() => setShowLineupPanel(true)}
         onPrevMatch={handlePrevMatch}
         onNextMatch={handleNextMatch}
         hasPrevMatch={hasPrevMatch}
         hasNextMatch={hasNextMatch}
       />
+
+      {showLineupPanel && (
+        <BottomSheet title="Alineación" onClose={() => setShowLineupPanel(false)}>
+          <AlineacionScreen
+            players={players}
+            convocadosDelPartido={convocadosDelPartido}
+            currentUser={currentUser}
+            matchId={partidoMostrado?.matchId}
+            jugado={!!partidoMostrado?.jugado}
+            jornada={partidoMostrado?.jornada}
+            rival={partidoMostrado?.rival}
+          />
+        </BottomSheet>
+      )}
 
       {convocatoriaLoading && <p className="hint">Consultando convocatoria...</p>}
       {!convocatoriaLoading && convocatoriaError && (
@@ -378,43 +423,47 @@ export default function PlantillaScreen({ players, setPlayers, currentUser, vote
           */}
 
           <p className="hint">Convocatoria (encuesta WhatsApp)</p>
-          {showMatchForm ? (
-            <form className="card form" onSubmit={handleSaveMatch}>
-              <input
-                placeholder={partidoMostrado?.rival || 'Rival'}
-                value={matchForm.rival}
-                onChange={(e) => setMatchForm({ ...matchForm, rival: e.target.value })}
-              />
-              <input
-                type="date"
-                value={matchForm.date}
-                onChange={(e) => setMatchForm({ ...matchForm, date: e.target.value })}
-              />
-              <input
-                placeholder="ID del mensaje de la encuesta (Whapi)"
-                value={matchForm.whatsappPollId}
-                onChange={(e) => setMatchForm({ ...matchForm, whatsappPollId: e.target.value })}
-              />
-              {matchError && <p className="auth-error">{matchError}</p>}
-              <button type="submit" className="btn-primary" disabled={matchSaving}>
-                {matchSaving ? 'Guardando...' : 'Guardar convocatoria'}
-              </button>
-            </form>
-          ) : (
-            <button className="btn-outline" onClick={() => setShowMatchForm(true)}>
-              {nextMatch?.whatsappPollId ? 'Editar convocatoria' : '+ Configurar encuesta del próximo partido'}
-            </button>
-          )}
+          {!partidoMostrado?.jugado && (
+            <>
+              {showMatchForm ? (
+                <form className="card form" onSubmit={handleSaveMatch}>
+                  <input
+                    placeholder={partidoMostrado?.rival || 'Rival'}
+                    value={matchForm.rival}
+                    onChange={(e) => setMatchForm({ ...matchForm, rival: e.target.value })}
+                  />
+                  <input
+                    type="date"
+                    value={matchForm.date}
+                    onChange={(e) => setMatchForm({ ...matchForm, date: e.target.value })}
+                  />
+                  <input
+                    placeholder="ID del mensaje de la encuesta (Whapi)"
+                    value={matchForm.whatsappPollId}
+                    onChange={(e) => setMatchForm({ ...matchForm, whatsappPollId: e.target.value })}
+                  />
+                  {matchError && <p className="auth-error">{matchError}</p>}
+                  <button type="submit" className="btn-primary" disabled={matchSaving}>
+                    {matchSaving ? 'Guardando...' : 'Guardar convocatoria'}
+                  </button>
+                </form>
+              ) : (
+                <button className="btn-outline" onClick={() => setShowMatchForm(true)}>
+                  {nextMatch?.whatsappPollId ? 'Editar convocatoria' : '+ Configurar encuesta del próximo partido'}
+                </button>
+              )}
 
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={handleGenerarInscripcion}
-            disabled={generandoInscripcion || !nextMatch?.rival}
-          >
-            {generandoInscripcion ? 'Generando...' : 'Generar inscripción'}
-          </button>
-          {errorInscripcion && <p className="auth-error">{errorInscripcion}</p>}
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleGenerarInscripcion}
+                disabled={generandoInscripcion || !nextMatch?.rival}
+              >
+                {generandoInscripcion ? 'Generando...' : 'Generar inscripción'}
+              </button>
+              {errorInscripcion && <p className="auth-error">{errorInscripcion}</p>}
+            </>
+          )}
 
           <p className="hint">Club</p>
           {showClubForm ? (

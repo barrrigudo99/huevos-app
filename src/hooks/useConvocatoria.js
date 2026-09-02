@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { fetchPollStatus } from '../api'
 
-export default function useConvocatoria(players) {
+export default function useConvocatoria() {
   const [votes, setVotes] = useState({})
   const [pollLoading, setPollLoading] = useState(true)
   const [pollError, setPollError] = useState('')
@@ -19,10 +19,5 @@ export default function useConvocatoria(players) {
       .finally(() => setPollLoading(false))
   }, [])
 
-  const listaConvocados = useMemo(
-    () => players.filter((p) => p.phone && votes[p.phone] === 'Si'),
-    [players, votes]
-  )
-
-  return { votes, listaConvocados, pollLoading, pollError, pollConfigured }
+  return { votes, pollLoading, pollError, pollConfigured }
 }

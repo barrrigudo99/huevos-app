@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
-import { fetchCalendario, fetchClub, fetchEstadisticasPersonales } from '../api'
+import { fetchCalendario, fetchClub, fetchEstadisticasPersonales, fetchAsistentesConvocatoria } from '../api'
 import { OUR_TEAM, displayTeamName, sortedMatchesForTeam } from '../data/league'
 import MatchStatsPanel from './MatchStatsPanel'
 import MatchResultPanel from './MatchResultPanel'
@@ -27,6 +27,8 @@ export default function StatsScreen({
   const [selectedMatch, setSelectedMatch] = useState(null)
   const [loadingMatches, setLoadingMatches] = useState(isEntrenador)
   const [matchesError, setMatchesError] = useState('')
+  const [calledPlayerIds, setCalledPlayerIds] = useState(null)
+  const [calledError, setCalledError] = useState('')
 
   useEffect(() => {
     if (!isEntrenador) return
@@ -53,6 +55,22 @@ export default function StatsScreen({
     }
     onOpenMatchHandled?.()
   }, [openMatchId, calendario])
+
+  // Al elegir un partido, se calcula qué jugadores votaron "Sí" en su
+  // convocatoria (call_ups.attended = true) para no listarlos a todos en
+  // MatchStatsPanel. Si falla la consulta, se opta por no mostrar a nadie
+  // en vez de mostrar la plantilla completa sin filtrar.
+  useEffect(() => {
+    if (!selectedMatch) return
+    setCalledPlayerIds(null)
+    setCalledError('')
+    fetchAsistentesConvocatoria(selectedMatch.id)
+      .then((res) => setCalledPlayerIds(new Set(res.playerIds)))
+      .catch((err) => {
+        setCalledError(err.message)
+        setCalledPlayerIds(new Set())
+      })
+  }, [selectedMatch])
 
   function refrescarEstadisticas() {
     return Promise.all([fetchEstadisticasPersonales(), refreshPlayerMatchStats?.()]).then(([estadisticas]) => {
@@ -87,18 +105,26 @@ export default function StatsScreen({
           {displayTeamName(selectedMatch.equipo_local, clubName)} vs{' '}
           {displayTeamName(selectedMatch.equipo_visitante, clubName)}
         </p>
-        <MatchResultPanel
-          matchId={selectedMatch.id}
-          rival={rivalDelPartido}
-          currentUser={currentUser}
-          resultadoGuardado={entradaGuardada?.resultado}
-          onSaved={refrescarEstadisticas}
-        />
+        {selectedMatch.jugado && (
+          <>
+            <MatchResultPanel
+              matchId={selectedMatch.id}
+              rival={rivalDelPartido}
+              currentUser={currentUser}
+              resultadoGuardado={entradaGuardada?.resultado}
+              onSaved={refrescarEstadisticas}
+            />
+            {calledError && <p className="auth-error">{calledError}</p>}
+          </>
+        )}
         <MatchStatsPanel
           matchId={selectedMatch.id}
           players={players}
           currentUser={currentUser}
           jugadoresGuardados={jugadoresGuardados}
+          calledPlayerIds={calledPlayerIds}
+          jugado={selectedMatch.jugado}
+          onMarked={() => setSelectedMatch((prev) => (prev ? { ...prev, jugado: true } : prev))}
           onSaved={refrescarEstadisticas}
         />
       </div>
@@ -132,14 +158,18 @@ export default function StatsScreen({
         <>
           <p className="hint">Estadísticas por partido</p>
           {loadingMatches && <p className="hint">Cargando partidos...</p>}
-          {matchesError && <p className="auth-error">{matchesError}</p>}
+          {matchesError && <p className="auth-en supabas error">{matchesError}</p>}
           {calendario && (
             <div className="stats-match-picker">
               {sortedMatchesForTeam(calendario, OUR_TEAM).length === 0 && (
                 <p className="empty">Todavía no hay partidos en el calendario.</p>
               )}
               {sortedMatchesForTeam(calendario, OUR_TEAM).map((m) => (
-                <div className="stats-match-picker-item" key={m.id} onClick={() => setSelectedMatch(m)}>
+                <div
+                  className={`stats-match-picker-item${m.jugado ? ' stats-match-picker-item-played' : ''}`}
+                  key={m.id}
+                  onClick={() => setSelectedMatch(m)}
+                >
                   <span>
                     {displayTeamName(m.equipo_local, clubName)} vs {displayTeamName(m.equipo_visitante, clubName)}
                   </span>

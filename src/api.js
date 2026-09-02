@@ -28,6 +28,38 @@ export function addPlayer(player, userId) {
   })
 }
 
+export function fetchPositions() {
+  return request('/positions')
+}
+
+export function fetchPlayerProfile(playerId) {
+  return request(`/players/${playerId}/profile`)
+}
+
+export function updatePlayerProfile(playerId, data, userId) {
+  return request(`/players/${playerId}`, {
+    method: 'PUT',
+    headers: { 'X-User-Id': userId },
+    body: JSON.stringify(data),
+  })
+}
+
+export function uploadPlayerPhoto(playerId, photo, userId) {
+  return request(`/players/${playerId}/photo`, {
+    method: 'POST',
+    headers: { 'X-User-Id': userId },
+    body: JSON.stringify(photo),
+  })
+}
+
+export function changePassword(userId, passwords) {
+  return request(`/users/${userId}/password`, {
+    method: 'PUT',
+    headers: { 'X-User-Id': userId },
+    body: JSON.stringify(passwords),
+  })
+}
+
 export function registerUser(user) {
   return request('/register', { method: 'POST', body: JSON.stringify(user) })
 }
@@ -117,25 +149,6 @@ export function updateClub(data, userId) {
   })
 }
 
-export function fetchMatchEvents() {
-  return request('/match-events')
-}
-
-export function addMatchEvent(matchId, data, userId) {
-  return request(`/match-events/${matchId}`, {
-    method: 'POST',
-    headers: { 'X-User-Id': userId },
-    body: JSON.stringify(data),
-  })
-}
-
-export function deleteMatchEvent(matchId, eventId, userId) {
-  return request(`/match-events/${matchId}/${eventId}`, {
-    method: 'DELETE',
-    headers: { 'X-User-Id': userId },
-  })
-}
-
 export function fetchConvocatoriaHistory() {
   return request('/convocatoria-history')
 }
@@ -146,4 +159,29 @@ export function fetchCalendario() {
 
 export function fetchConvocatoriaPorFecha(fecha) {
   return request(`/convocatoria-por-fecha?fecha=${encodeURIComponent(fecha)}`, { cache: 'no-store' })
+}
+
+export function fetchAsistentesConvocatoria(matchdayId) {
+  return request(`/call-ups/${matchdayId}`)
+}
+
+// Valoraciones + MVP que ESTE usuario ya ha guardado para un partido:
+// { ratings: { [playerId]: { impacto, esfuerzo, equipo, liderazgo } }, mvpPlayerId }.
+export function fetchPlayerRatings(matchId, userId) {
+  return request(`/player-ratings/${matchId}`, {
+    headers: { 'X-User-Id': userId },
+    cache: 'no-store',
+  })
+}
+
+// Guarda las valoraciones de este usuario para un partido. `payload` es
+// { ratings: [{ playerId, impacto, esfuerzo, equipo, liderazgo }], mvpPlayerId }.
+// Un criterio a 0 se guarda como sin puntuar; un jugador con los 4 a 0 pierde
+// su fila. mvpPlayerId null quita el voto de MVP.
+export function savePlayerRatings(matchId, payload, userId) {
+  return request(`/player-ratings/${matchId}`, {
+    method: 'POST',
+    headers: { 'X-User-Id': userId },
+    body: JSON.stringify(payload),
+  })
 }

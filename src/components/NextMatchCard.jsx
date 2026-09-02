@@ -51,6 +51,7 @@ export default function NextMatchCard({
   players = [],
   currentUser,
   onOpenStats,
+  onOpenLineup,
   onPrevMatch,
   onNextMatch,
   hasPrevMatch = false,
@@ -64,7 +65,10 @@ export default function NextMatchCard({
       <button
         type="button"
         className="next-match-nav-btn"
-        onClick={onPrevMatch}
+        onClick={(e) => {
+          e.stopPropagation()
+          onPrevMatch?.()
+        }}
         disabled={!hasPrevMatch}
         aria-label="Jornada anterior"
       >
@@ -76,7 +80,10 @@ export default function NextMatchCard({
       <button
         type="button"
         className="next-match-nav-btn"
-        onClick={onNextMatch}
+        onClick={(e) => {
+          e.stopPropagation()
+          onNextMatch?.()
+        }}
         disabled={!hasNextMatch}
         aria-label="Jornada siguiente"
       >
@@ -87,11 +94,23 @@ export default function NextMatchCard({
 
   if (!nextMatch || !nextMatch.rival) {
     return (
-      <div className="next-match-card next-match-card-empty">
+      <div
+        className="next-match-card next-match-card-empty"
+        onClick={onOpenLineup}
+        role={onOpenLineup ? 'button' : undefined}
+        tabIndex={onOpenLineup ? 0 : undefined}
+      >
         {navegacion}
         <p className="next-match-empty-text">Todavía no hay próximo partido configurado.</p>
         {isEntrenador && (
-          <button type="button" className="next-match-stats-btn" onClick={onOpenStats}>
+          <button
+            type="button"
+            className="next-match-stats-btn"
+            onClick={(e) => {
+              e.stopPropagation()
+              onOpenStats?.()
+            }}
+          >
             <BarChart2 size={14} /> Anotar estadísticas
           </button>
         )}
@@ -103,7 +122,12 @@ export default function NextMatchCard({
   const confirmados = players.filter((p) => p.phone && votes[p.phone] === 'Si').length
 
   return (
-    <div className="next-match-card">
+    <div
+      className="next-match-card"
+      onClick={onOpenLineup}
+      role={onOpenLineup ? 'button' : undefined}
+      tabIndex={onOpenLineup ? 0 : undefined}
+    >
       {navegacion || <span className="next-match-tag">Próximo partido</span>}
 
       <div className="next-match-teams">
@@ -111,7 +135,14 @@ export default function NextMatchCard({
           <div className="next-match-crest next-match-crest-us">{iniciales(clubName || 'Nosotros')}</div>
           <span className="next-match-team-name">{clubName || 'Nosotros'}</span>
         </div>
-        <span className="next-match-vs">VS</span>
+        <div className="next-match-score-col">
+          <span className="next-match-vs">VS</span>
+          {nextMatch.jugado ? (
+            <span className="next-match-status-badge next-match-status-badge-played">Jugado</span>
+          ) : (
+            <span className="next-match-status-badge next-match-status-badge-pending">Pendiente</span>
+          )}
+        </div>
         <div className="next-match-team">
           <div className="next-match-crest next-match-crest-rival">{iniciales(nextMatch.rival)}</div>
           <span className="next-match-team-name">{nextMatch.rival}</span>
@@ -136,7 +167,14 @@ export default function NextMatchCard({
       {dias !== null && <span className="next-match-countdown">{etiquetaCuentaAtras(dias)}</span>}
 
       {isEntrenador && (
-        <button type="button" className="next-match-stats-btn" onClick={onOpenStats}>
+        <button
+          type="button"
+          className="next-match-stats-btn"
+          onClick={(e) => {
+            e.stopPropagation()
+            onOpenStats?.()
+          }}
+        >
           <BarChart2 size={14} /> Anotar estadísticas
         </button>
       )}
