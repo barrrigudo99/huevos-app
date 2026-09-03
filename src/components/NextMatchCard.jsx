@@ -120,10 +120,13 @@ export default function NextMatchCard({
 
   const dias = diasRestantes(nextMatch.date)
   const confirmados = players.filter((p) => p.phone && votes[p.phone] === 'Si').length
+  // "00:00" es el valor por defecto de los partidos sin hora configurada
+  // todavía (match_date sin hora real guardada) — se trata como "sin hora".
+  const horaMostrada = nextMatch.time && nextMatch.time !== '00:00' ? nextMatch.time : ''
 
   return (
     <div
-      className="next-match-card"
+      className={`next-match-card ${nextMatch.jugado ? 'next-match-card-played' : 'next-match-card-scheduled'}`}
       onClick={onOpenLineup}
       role={onOpenLineup ? 'button' : undefined}
       tabIndex={onOpenLineup ? 0 : undefined}
@@ -136,7 +139,11 @@ export default function NextMatchCard({
           <span className="next-match-team-name">{clubName || 'Nosotros'}</span>
         </div>
         <div className="next-match-score-col">
-          <span className="next-match-vs">VS</span>
+          <span className="next-match-score">
+            {nextMatch.jugado
+              ? `${nextMatch.resultado?.golesNosotros ?? 0} - ${nextMatch.resultado?.golesRival ?? 0}`
+              : horaMostrada}
+          </span>
           {nextMatch.jugado ? (
             <span className="next-match-status-badge next-match-status-badge-played">Jugado</span>
           ) : (

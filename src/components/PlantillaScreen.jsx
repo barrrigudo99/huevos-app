@@ -6,6 +6,7 @@ import {
   fetchCalendario,
   fetchClub,
   fetchConvocatoriaPorFecha,
+  fetchEstadisticasPersonales,
   fetchNextMatch,
   fetchNextMatchAuto,
   generarInscripcion,
@@ -63,7 +64,7 @@ export default function PlantillaScreen({
   // proximoPartido en cuanto ambos datos están disponibles.
   const [matchIndex, setMatchIndex] = useState(null)
   const [showMatchForm, setShowMatchForm] = useState(false)
-  const [matchForm, setMatchForm] = useState({ rival: '', date: '', whatsappPollId: '' })
+  const [matchForm, setMatchForm] = useState({ rival: '', date: '', time: '', whatsappPollId: '' })
   const [matchSaving, setMatchSaving] = useState(false)
   const [matchError, setMatchError] = useState('')
   const [generandoInscripcion, setGenerandoInscripcion] = useState(false)
@@ -76,6 +77,10 @@ export default function PlantillaScreen({
   const [clubError, setClubError] = useState('')
 
   const [calendario, setCalendario] = useState([])
+  // Marcador real (matches.goals_for/goals_against) por jornada, para
+  // pintarlo en NextMatchCard cuando el partido ya está jugado — misma
+  // fuente que ya usa StatsScreen, sin duplicar la query en el backend.
+  const [estadisticasPersonales, setEstadisticasPersonales] = useState([])
   // Convocatoria de la lista de jugadores de abajo: siempre la del partido
   // que se está mostrando en NextMatchCard (partidoMostrado), nunca una
   // fecha elegida aparte — así las dos nunca pueden desincronizarse.
@@ -91,12 +96,19 @@ export default function PlantillaScreen({
   }, [])
 
   useEffect(() => {
+    fetchEstadisticasPersonales()
+      .then(setEstadisticasPersonales)
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
     fetchNextMatch()
       .then((match) => {
         setNextMatch(match)
         setMatchForm({
           rival: match?.rival || '',
           date: match?.date || '',
+          time: match?.time || '',
           whatsappPollId: match?.whatsappPollId || '',
         })
       })
@@ -117,6 +129,15 @@ export default function PlantillaScreen({
     setMatchIndex(idx >= 0 ? idx : 0)
   }, [proximoPartido, calendario, matchIndex])
 
+  // Marcador real de la jornada mostrada, si ya está jugada — mismo dato que
+  // usa StatsScreen (matches.goals_for/goals_against vía
+  // /api/estadisticas-personales), cruzado aquí por matchId en vez de volver
+  // a consultar `matches`.
+  const resultadoPartidoMostrado = (matchId) => {
+    const entrada = estadisticasPersonales.find((e) => e.id === matchId)
+    return entrada?.resultado || null
+  }
+
   const partidoNavegado = matchIndex !== null ? calendario[matchIndex] : null
   const partidoMostrado = partidoNavegado
     ? {
@@ -124,8 +145,10 @@ export default function PlantillaScreen({
         jornada: partidoNavegado.jornada,
         rival: rivalDe(partidoNavegado),
         date: partidoNavegado.fecha,
+        time: partidoNavegado.hora,
         esLocal: partidoNavegado.equipo_local === OUR_TEAM,
         jugado: partidoNavegado.jugado,
+        resultado: partidoNavegado.jugado ? resultadoPartidoMostrado(partidoNavegado.id) : null,
       }
     : proximoPartido
   const hasPrevMatch = matchIndex !== null && matchIndex > 0
@@ -143,14 +166,15 @@ export default function PlantillaScreen({
       ...prev,
       rival: partidoMostrado?.rival || '',
       date: partidoMostrado?.date || '',
+      time: partidoMostrado?.time || '',
     }))
-    // Dependencias en valores primitivos (rival/date), no en partidoMostrado
-    // entero: ese objeto se reconstruye con un literal `{...}` en cada
-    // render (ver más arriba) mientras haya navegación manual por jornadas,
-    // así que usarlo como dependencia disparaba este efecto en cada render →
-    // nuevo setMatchForm → nuevo render → bucle infinito ("Maximum update
-    // depth exceeded").
-  }, [showMatchForm, partidoMostrado?.rival, partidoMostrado?.date])
+    // Dependencias en valores primitivos (rival/date/time), no en
+    // partidoMostrado entero: ese objeto se reconstruye con un literal
+    // `{...}` en cada render (ver más arriba) mientras haya navegación
+    // manual por jornadas, así que usarlo como dependencia disparaba este
+    // efecto en cada render → nuevo setMatchForm → nuevo render → bucle
+    // infinito ("Maximum update depth exceeded").
+  }, [showMatchForm, partidoMostrado?.rival, partidoMostrado?.date, partidoMostrado?.time])
 
   // La convocatoria de la lista de jugadores sigue siempre a partidoMostrado
   // (la jornada visible en la tarjeta, incluida la navegada a mano con las
@@ -436,6 +460,11 @@ export default function PlantillaScreen({
                     type="date"
                     value={matchForm.date}
                     onChange={(e) => setMatchForm({ ...matchForm, date: e.target.value })}
+                  />
+                  <input
+                    type="time"
+                    value={matchForm.time}
+                    onChange={(e) => setMatchForm({ ...matchForm, time: e.target.value })}
                   />
                   <input
                     placeholder="ID del mensaje de la encuesta (Whapi)"

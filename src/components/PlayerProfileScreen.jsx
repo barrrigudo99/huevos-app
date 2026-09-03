@@ -7,6 +7,10 @@ import {
   uploadPlayerPhoto,
   changePassword,
 } from '../api'
+import partidosIcon from './icons/icons-perfil/partidos.png'
+import golesIcon from './icons/icons-perfil/goles.png'
+import asistenciasIcon from './icons/icons-perfil/asistencias.png'
+import tarjetasIcon from './icons/icons-perfil/tarjetas.png'
 
 // Paleta e identidad tipográfica del mockup aprobado — valores exactos, no
 // tocar (ver conversación de rediseño de Perfil).
@@ -184,6 +188,48 @@ const inputStyle = {
   boxSizing: 'border-box',
 }
 
+function StatBadge({ icon, value, label }) {
+  return (
+    <div className="profile-statbadge">
+      <div className="profile-statbadge-icon" style={{ backgroundColor: COLORS.line + '66' }}>
+        {icon}
+      </div>
+      <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 19, color: COLORS.ink }}>{value}</span>
+      <span style={{ fontSize: 10.5, color: COLORS.secondary, marginTop: 2, textAlign: 'center' }}>{label}</span>
+    </div>
+  )
+}
+
+function SeasonStatsRow({ stats }) {
+  return (
+    <div className="profile-season-stats" style={{ border: `1px solid ${COLORS.line}`, backgroundColor: '#FFFFFF' }}>
+      <p style={{ fontSize: 12, color: COLORS.secondary, marginBottom: 12 }}>Temporada actual · Partidos oficiales</p>
+      <div className="profile-season-stats-row">
+        <StatBadge
+          icon={<img src={partidosIcon} alt="" className="profile-statbadge-img" />}
+          value={stats.matchesPlayed ?? 0}
+          label="Partidos"
+        />
+        <StatBadge
+          icon={<img src={golesIcon} alt="" className="profile-statbadge-img" />}
+          value={stats.goals ?? 0}
+          label="Goles"
+        />
+        <StatBadge
+          icon={<img src={asistenciasIcon} alt="" className="profile-statbadge-img" />}
+          value={stats.assists ?? 0}
+          label="Asistencias"
+        />
+        <StatBadge
+          icon={<img src={tarjetasIcon} alt="" className="profile-statbadge-img" />}
+          value={`${stats.yellowCards ?? 0}/${stats.redCards ?? 0}`}
+          label="Tarjetas"
+        />
+      </div>
+    </div>
+  )
+}
+
 function EstadisticasTab({ stats }) {
   const radarData = [
     { subject: 'Esfuerzo', value: stats.avgEsfuerzo ?? 0 },
@@ -195,6 +241,8 @@ function EstadisticasTab({ stats }) {
 
   return (
     <>
+      <SeasonStatsRow stats={stats} />
+
       <div className="profile-wheel-card" style={{ backgroundColor: COLORS.pitch }}>
         <div className="profile-wheel-header">
           <span style={{ fontSize: 12, color: 'rgba(242,243,236,0.65)' }}>Valoración media</span>
@@ -218,20 +266,7 @@ function EstadisticasTab({ stats }) {
         </div>
       </div>
 
-      <div className="profile-stats-grid">
-        <div className="profile-stats-cell-left" style={{ borderRight: `1px solid ${COLORS.line}` }}>
-          <p style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 30, color: COLORS.ink }}>{stats.goals}</p>
-          <p style={{ fontSize: 12, color: COLORS.secondary }}>Goles</p>
-        </div>
-        <div className="profile-stats-cell-right">
-          <p style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 30, color: COLORS.ink }}>{stats.assists}</p>
-          <p style={{ fontSize: 12, color: COLORS.secondary }}>Asistencias</p>
-        </div>
-      </div>
-
       <div>
-        <Row label="Amarillas" value={stats.yellowCards} />
-        <Row label="Rojas" value={stats.redCards} />
         <Row
           label="MVPs recibidos"
           value={stats.mvpsRecibidos}

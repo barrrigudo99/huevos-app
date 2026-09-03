@@ -210,8 +210,8 @@ body {
   font-size: 22px;
 }
 .avatar-sm {
-  width: 28px;
-  height: 28px;
+  width: 43px;
+  height: 43px;
   font-size: 10px;
 }
 .avatar-blank {
@@ -281,16 +281,12 @@ select {
 }
 .pitch {
   position: relative;
-  aspect-ratio: 3 / 4;
-  background: #1d9e75;
+  aspect-ratio: 1252 / 2028;
+  background-image: none;
+  background-size: cover;
+  background-position: center;
   border-radius: 8px;
   overflow: hidden;
-}
-.pitch::before {
-  content: '';
-  position: absolute;
-  inset: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 .pitch-slot {
   position: absolute;
@@ -332,6 +328,51 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Icono de gol/asistencia/tarjeta por jugador en el pitch-slot, solo cuando
+   el partido ya está jugado (ver AlineacionScreen, statsByPlayerId). */
+.pitch-slot-badges {
+  position: inherit;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+}
+.pitch-badge {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  height: 20px;
+  padding: 0 2px;
+  border-radius: 999px;
+  background: white;
+  color: var(--text-primary);
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.pitch-badge-icon {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+  display: block;
+}
+/* Las tarjetas son un rectángulo de color de por sí (ver
+   icons/tarjeta_amarilla.png, tarjeta_roja.png, doble_amarilla.png): sin el
+   fondo blanco en píldora que llevan gol/asistencia. */
+.pitch-badge-card {
+  padding: 0;
+  border-radius: 2px;
+  background: none;
+  overflow: hidden;
+}
+.pitch-badge-card .pitch-badge-icon {
+  width: 8px;
+  height: 11px;
+  object-fit: cover;
 }
 
 .bench-list {
@@ -667,11 +708,19 @@ select {
   gap: 12px;
   padding: 18px 16px 16px;
   border-radius: 18px;
-  background: linear-gradient(135deg, var(--accent) 0%, #0a4a3c 100%);
   color: white;
-  box-shadow: 0 6px 20px rgba(15, 110, 86, 0.28);
   margin-bottom: 4px;
   cursor: pointer;
+}
+/* Programado vs. jugado: mismo diferenciador visual pasado/futuro del
+   mockup aprobado (ver NextMatchCard, prop nextMatch.jugado). */
+.next-match-card-scheduled {
+  background: linear-gradient(135deg, var(--accent) 0%, #0a4a3c 100%);
+  box-shadow: 0 6px 20px rgba(15, 110, 86, 0.28);
+}
+.next-match-card-played {
+  background: linear-gradient(135deg, #6d7871 0%, #3d443f 100%);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
 }
 .next-match-card::after {
   content: '';
@@ -763,11 +812,14 @@ select {
   text-overflow: ellipsis;
   max-width: 100px;
 }
-.next-match-vs {
-  font-size: 13px;
-  font-weight: 700;
-  opacity: 0.7;
+.next-match-score {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
   flex: none;
+  min-height: 1em;
 }
 .next-match-score-col {
   display: flex;
@@ -1261,16 +1313,34 @@ select {
   height: 100%;
   border-radius: 9999px;
 }
-.profile-stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.profile-season-stats {
+  border-radius: 16px;
   margin-bottom: 20px;
+  padding: 16px;
 }
-.profile-stats-cell-left {
-  padding-right: 16px;
+.profile-season-stats-row {
+  display: flex;
 }
-.profile-stats-cell-right {
-  padding-left: 16px;
+.profile-statbadge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+.profile-statbadge-img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+}
+.profile-statbadge-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
 }
 .profile-stat-row {
   display: flex;
@@ -1315,3 +1385,5 @@ select {
   width: 100%;
   border-radius: 12px;
 }
+
+

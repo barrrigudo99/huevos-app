@@ -3,7 +3,12 @@ import cors from 'cors'
 import { createClient } from '@supabase/supabase-js'
 import bcrypt from 'bcryptjs'
 import ws from 'ws'
-import { createPollMessage, fetchPollVotes } from './whatsappPollService.js'
+import {
+  createPollMessage,
+  fetchPollVotes,
+  isMockVotesActive,
+  setMockPlayerPhonesProvider,
+} from './whatsappPollService.js'
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error('Faltan SUPABASE_URL y/o SUPABASE_SERVICE_ROLE_KEY en el entorno (revisa .env).')
@@ -131,33 +136,14 @@ async function fetchPlayersFromSupabase() {
   }))
 }
 
-// Modo simulación de votos de convocatoria: si WHAPI_MOCK_VOTES está
-// definido, la convocatoria NO consulta Whapi.Cloud y devuelve estos votos.
-// Sirve para probar el flujo (p. ej. el panel "Valorar partido", que se
-// nutre de los votantes 'Si') sin encuesta real de WhatsApp. Valores:
-//   'all-si'                 -> todos los jugadores con teléfono => 'Si'
-//   '34600...,34611...'      -> esos teléfonos => 'Si' (el resto sin voto)
-//   './ruta/votos.json'      -> { "<phone>": "Si"|"No"|"Duda", ... }
-// Devuelve null si no está en modo simulación.
-async function votosSimulados() {
-  const raw = process.env.WHAPI_MOCK_VOTES
-  if (!raw) return null
-  if (raw === 'all-si') {
-    const players = await fetchPlayersFromSupabase()
-    return Object.fromEntries(players.filter((p) => p.phone).map((p) => [p.phone, 'Si']))
-  }
-  if (raw.endsWith('.json')) {
-    const fs = await import('node:fs/promises')
-    return JSON.parse(await fs.readFile(raw, 'utf8'))
-  }
-  return Object.fromEntries(
-    raw
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((phone) => [phone, 'Si'])
-  )
-}
+// El modo simulación de votos (WHAPI_MOCK_VOTES) vive ahora entero en
+// whatsappPollService.js (fetchPollVotes lo comprueba internamente); esto
+// solo le da la forma de obtener los teléfonos de la plantilla para su
+// variante 'all-si', ya que ese módulo no conoce Supabase.
+setMockPlayerPhonesProvider(async () => {
+  const players = await fetchPlayersFromSupabase()
+  return players.filter((p) => p.phone).map((p) => p.phone)
+})
 
 app.get('/api/players', async (req, res) => {
   try {
@@ -549,7 +535,16 @@ function matchdayRivalDate(m, clubNameById) {
   return {
     rival: clubNameById.get(m.opponent_club_id) || '',
     date: m.match_date ? String(m.match_date).slice(0, 10) : '',
+    // match_date es timestamp sin zona horaria: guarda hora real si se
+    // configuró, si no queda a 00:00 (ver PUT /api/next-match).
+    time: m.match_date ? String(m.match_date).slice(11, 16) : '',
   }
+}
+
+// date+time -> valor listo para match_date (timestamp sin zona horaria). Sin
+// hora configurada, se guarda a medianoche (comportamiento previo).
+function combinarFechaHora(date, time) {
+  return date ? `${date}T${time || '00:00'}:00` : null
 }
 
 async function getMatchdayById(matchdayId) {
@@ -567,7 +562,7 @@ async function getMatchdayById(matchdayId) {
 // libre. Da de alta el club rival si tampoco existe en `clubs` todavía. No
 // se conoce la localía de un partido "a mano", así que se asume local por
 // defecto (el diseño anterior tampoco la guardaba para estos casos).
-async function crearMatchdayAdHoc({ rival, date }) {
+async function crearMatchdayAdHoc({ rival, date, time }) {
   const season = await getCurrentSeason()
   const { data: maxRow } = await supabase
     .from('matchdays')
@@ -600,7 +595,7 @@ async function crearMatchdayAdHoc({ rival, date }) {
       season_id: season.id,
       competition_id: competition?.id ?? null,
       jornada_number: nextJornada,
-      match_date: date || null,
+      match_date: combinarFechaHora(date, time),
       opponent_club_id: opponentClubId,
       is_home: true,
       status: 'scheduled',
@@ -619,7 +614,7 @@ async function crearMatchdayAdHoc({ rival, date }) {
 //    conserva el mismo (igual que hacía mismoPartido() con el id sintético).
 // 3) si coincide con una jornada real del calendario por texto, esa.
 // 4) si no, se crea una jornada nueva ad-hoc.
-async function resolverMatchdayActivo({ matchId, rival, date, actual }) {
+async function resolverMatchdayActivo({ matchId, rival, date, time, actual }) {
   if (matchId != null) {
     const { data, error } = await supabase.from('matchdays').select('id').eq('id', matchId).maybeSingle()
     if (error) throw new Error(error.message)
@@ -634,7 +629,7 @@ async function resolverMatchdayActivo({ matchId, rival, date, actual }) {
   const encontrado = reconstruido.find((p) => p.fecha === date && (p.equipo_local === rival || p.equipo_visitante === rival))
   if (encontrado) return encontrado.id
 
-  return crearMatchdayAdHoc({ rival, date })
+  return crearMatchdayAdHoc({ rival, date, time })
 }
 
 // Convierte {phone: 'Si'|'No'|'Duda'} en filas de call_ups: una por cada
@@ -672,8 +667,8 @@ app.get('/api/next-match', async (req, res) => {
     if (!activeId) return res.json(null)
     const m = await getMatchdayById(activeId)
     if (!m) return res.json(null)
-    const { rival, date } = matchdayRivalDate(m, await getClubNameById())
-    res.json({ matchId: m.id, rival, date, whatsappPollId: m.whatsapp_poll_id || '' })
+    const { rival, date, time } = matchdayRivalDate(m, await getClubNameById())
+    res.json({ matchId: m.id, rival, date, time, whatsappPollId: m.whatsapp_poll_id || '' })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -682,7 +677,7 @@ app.get('/api/next-match', async (req, res) => {
 app.put('/api/next-match', requireEntrenador(), async (req, res) => {
   try {
     const matchIdBody = req.body.matchId != null ? Number(req.body.matchId) : null
-    const { rival, date, whatsappPollId } = req.body
+    const { rival, date, time, whatsappPollId } = req.body
     const clubNameById = await getClubNameById()
 
     const activeId = await getActiveMatchdayId()
@@ -694,27 +689,41 @@ app.put('/api/next-match', requireEntrenador(), async (req, res) => {
 
     const rivalFinal = rival ?? actual?.rival ?? ''
     const dateFinal = date ?? actual?.date ?? ''
+    const timeFinal = time ?? actual?.time ?? ''
 
-    const matchdayId = await resolverMatchdayActivo({ matchId: matchIdBody, rival: rivalFinal, date: dateFinal, actual })
+    const matchdayId = await resolverMatchdayActivo({
+      matchId: matchIdBody,
+      rival: rivalFinal,
+      date: dateFinal,
+      time: timeFinal,
+      actual,
+    })
 
     // Si cambiamos a un partido distinto y el que deja de ser el activo
     // tenía encuesta configurada, se archiva antes de perder el puntero.
-    if (actual && actual.id !== matchdayId && actual.whatsappPollId) {
+    // También se archiva sin encuesta real si el modo mock está activo, para
+    // que call_ups salga consistente con los votos simulados que ya ve
+    // PlantillaScreen (si no, con el mock activo pero sin whatsapp_poll_id,
+    // esto nunca se ejecutaría y call_ups se quedaría vacía).
+    if (actual && actual.id !== matchdayId && (actual.whatsappPollId || isMockVotesActive())) {
       await archivarVotos(actual.id, actual.whatsappPollId)
     }
 
     const nuevoPollId = whatsappPollId ?? (actual?.id === matchdayId ? actual?.whatsappPollId : '') ?? ''
-    const { error: updErr } = await supabase
-      .from('matchdays')
-      .update({ whatsapp_poll_id: nuevoPollId || null })
-      .eq('id', matchdayId)
+    // match_date también se actualiza aquí para una jornada ya existente del
+    // calendario (no solo al crearla ad-hoc): antes este endpoint solo
+    // tocaba whatsapp_poll_id, así que cambiar la hora (o la fecha) de un
+    // partido ya presente en el calendario nunca se guardaba.
+    const updates = { whatsapp_poll_id: nuevoPollId || null }
+    if (dateFinal) updates.match_date = combinarFechaHora(dateFinal, timeFinal)
+    const { error: updErr } = await supabase.from('matchdays').update(updates).eq('id', matchdayId)
     if (updErr) throw new Error(updErr.message)
 
     await setActiveMatchdayId(matchdayId)
 
     const final = await getMatchdayById(matchdayId)
-    const { rival: rivalOut, date: dateOut } = matchdayRivalDate(final, clubNameById)
-    res.json({ matchId: final.id, rival: rivalOut, date: dateOut, whatsappPollId: final.whatsapp_poll_id || '' })
+    const { rival: rivalOut, date: dateOut, time: timeOut } = matchdayRivalDate(final, clubNameById)
+    res.json({ matchId: final.id, rival: rivalOut, date: dateOut, time: timeOut, whatsappPollId: final.whatsapp_poll_id || '' })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -813,15 +822,15 @@ app.post('/api/next-match/poll', requireEntrenador(), async (req, res) => {
 app.get('/api/next-match/poll', async (req, res) => {
   res.set('Cache-Control', 'no-store')
   try {
-    const simulados = await votosSimulados()
-    if (simulados) {
-      return res.json({ pollConfigured: true, votes: simulados })
-    }
     const activeId = await getActiveMatchdayId()
     if (!activeId) return res.json({ pollConfigured: false, votes: {} })
     const m = await getMatchdayById(activeId)
     const pollId = m?.whatsapp_poll_id
-    if (!pollId) return res.json({ pollConfigured: false, votes: {} })
+    // Sin encuesta real y sin modo mock, no hay nada que consultar — se
+    // corta aquí para no convertir "todavía no configurada" en un error.
+    // Con el mock activo se sigue adelante aunque no haya pollId: lo
+    // resuelve fetchPollVotes internamente.
+    if (!pollId && !isMockVotesActive()) return res.json({ pollConfigured: false, votes: {} })
 
     const votes = await fetchPollVotes(pollId)
     res.json({ pollConfigured: true, votes })
@@ -853,6 +862,7 @@ function reconstruirPartidoCalendario(m, clubNameById) {
     id: m.id,
     jornada: m.jornada_number,
     fecha: m.match_date ? String(m.match_date).slice(0, 10) : null,
+    hora: m.match_date ? String(m.match_date).slice(11, 16) : null,
     equipo_local: m.is_home ? OUR_TEAM : rivalName,
     equipo_visitante: m.is_home ? rivalName : OUR_TEAM,
     resultado: null,
@@ -908,6 +918,7 @@ app.get('/api/next-match/auto', async (req, res) => {
       jornada: siguiente.jornada,
       rival: esLocal ? siguiente.equipo_visitante : siguiente.equipo_local,
       date: siguiente.fecha,
+      time: siguiente.hora,
       esLocal,
     })
   } catch (err) {
@@ -933,7 +944,7 @@ app.put('/api/calendario/:matchId/jugado', requireEntrenador(), async (req, res)
   if (error) return res.status(500).json({ error: error.message })
   if (!data) return res.status(404).json({ error: 'Partido no encontrado en el calendario.' })
   try {
-    if (data.whatsapp_poll_id) {
+    if (data.whatsapp_poll_id || isMockVotesActive()) {
       await archivarVotos(data.id, data.whatsapp_poll_id)
     }
     res.json(reconstruirPartidoCalendario(data, await getClubNameById()))
@@ -952,20 +963,18 @@ app.get('/api/convocatoria-por-fecha', async (req, res) => {
   }
 
   try {
-    const simulados = await votosSimulados()
-    if (simulados) {
-      return res.json({ pollConfigured: true, votes: simulados })
-    }
     const { data: m, error } = await supabase
       .from('matchdays')
       .select('whatsapp_poll_id')
       .eq('match_date', fecha)
       .maybeSingle()
     if (error) throw new Error(error.message)
-    if (!m?.whatsapp_poll_id) {
+    const pollId = m?.whatsapp_poll_id
+    // Ver comentario equivalente en GET /api/next-match/poll.
+    if (!pollId && !isMockVotesActive()) {
       return res.json({ pollConfigured: false, votes: {} })
     }
-    const votes = await fetchPollVotes(m.whatsapp_poll_id)
+    const votes = await fetchPollVotes(pollId)
     res.json({ pollConfigured: true, votes })
   } catch (err) {
     res.status(502).json({ error: err.message })
