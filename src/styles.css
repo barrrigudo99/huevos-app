@@ -1,16 +1,16 @@
 :root {
-  --surface-0: #f4f3ef;
-  --surface-1: #ffffff;
-  --surface-2: #eef1ee;
-  --text-primary: #1c1c1a;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8b8a84;
-  --border: #dedcd4;
-  --accent: #0f6e56;
-  --accent-bg: #e1f5ee;
-  --gold: #c9971f;
-  --gold-bg: #fbf1dc;
-  --star-empty: #c9c7bd;
+  --surface-0: #0d0e10;
+  --surface-1: #15171a;
+  --surface-2: #1d2024;
+  --text-primary: #f5f1e8;
+  --text-secondary: #a8a59d;
+  --text-muted: #777873;
+  --border: #30343a;
+  --accent: #d9363e;
+  --accent-bg: #3a1d22;
+  --gold: #d6b36a;
+  --gold-bg: #332b1d;
+  --star-empty: #55575a;
   --radius: 10px;
 }
 
@@ -1184,6 +1184,38 @@ select {
   cursor: pointer;
   font-size: 13px;
 }
+/* Marca Los Huevos: tema oscuro, contraste alto y jerarquía deportiva. */
+.app-brand-lockup { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.app-crest { width: 34px; height: 34px; object-fit: contain; }
+.app-brand-lockup > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.app-kicker, .auth-kicker { color: var(--gold); font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.app-title { display: block; }
+.auth-crest { width: 82px; height: 82px; object-fit: contain; filter: drop-shadow(0 8px 18px rgba(0,0,0,.35)); }
+.auth-kicker { margin-top: 2px; }
+body { background: var(--surface-0); }
+.app { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+.app-header { padding-top: 18px; border-bottom: 1px solid rgba(214,179,106,.18); }
+.app-team { color: var(--gold); font-size: 11px; }
+.bottom-nav { background: var(--surface-1); border-top-color: var(--border); padding: 8px 0 max(8px, env(safe-area-inset-bottom)); }
+.nav-btn { color: var(--text-muted); font-weight: 600; }
+.nav-btn.active { color: var(--accent); }
+.nav-btn.active::before { content: ''; width: 22px; height: 2px; background: var(--accent); position: absolute; top: -8px; border-radius: 2px; }
+.nav-btn { position: relative; }
+.card, .metric, .scoreboard, .stats-panel-row { box-shadow: 0 8px 24px rgba(0,0,0,.14); }
+input, select { background: var(--surface-1); color: var(--text-primary); }
+input::placeholder { color: var(--text-muted); }
+input:focus, select:focus { outline: 2px solid var(--gold); outline-offset: 1px; border-color: var(--gold); }
+.btn-primary { background: var(--accent); font-weight: 700; }
+.btn-primary:hover:not(:disabled) { background: #ed4b52; }
+.btn-outline { border-color: var(--gold); color: var(--gold); }
+.auth { background: var(--surface-0); }
+.auth .card { background: var(--surface-1); border-color: var(--border); }
+.auth-tabs { background: var(--surface-1); }
+.auth-tab.active { background: var(--accent); }
+.status-dot-gray { background: #55575a; }
+.pitch { border: 1px solid var(--border); }
+.next-match-card-scheduled { background: linear-gradient(135deg, #b92732 0%, #651b25 100%); box-shadow: 0 10px 26px rgba(217,54,62,.24); }
+.next-match-card-played { background: linear-gradient(135deg, #3d4147 0%, #202226 100%); }
 .sheet-overlay {
   position: fixed;
   inset: 0;

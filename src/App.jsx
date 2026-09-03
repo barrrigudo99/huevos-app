@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { LogOut } from 'lucide-react'
+import huevosCrest from './components/icons/icon_huevos.png'
 import BottomNav from './components/BottomNav'
 import LoginScreen from './components/LoginScreen'
 import PlantillaScreen from './components/PlantillaScreen'
@@ -76,7 +77,13 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <span className="app-title">{TITLES[screen]}</span>
+        <div className="app-brand-lockup">
+          <img src={huevosCrest} alt="Escudo de Los Huevos" className="app-crest" />
+          <div>
+            <span className="app-kicker">LOS HUEVOS · FÚTBOL 7</span>
+            <span className="app-title">{TITLES[screen]}</span>
+          </div>
+        </div>
         <div className="app-header-right">
           <span className="app-team">
             {currentUser.name} · {roleLabel(currentUser.role)}
