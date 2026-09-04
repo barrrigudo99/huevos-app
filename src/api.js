@@ -85,6 +85,13 @@ export function markMatchAsPlayed(matchId, userId) {
   })
 }
 
+export function unmarkMatchAsPlayed(matchId, userId) {
+  return request(`/calendario/${matchId}/no-jugado`, {
+    method: 'PUT',
+    headers: { 'X-User-Id': userId },
+  })
+}
+
 export function updateNextMatch(data, userId) {
   return request('/next-match', {
     method: 'PUT',

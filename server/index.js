@@ -953,6 +953,25 @@ app.put('/api/calendario/:matchId/jugado', requireEntrenador(), async (req, res)
   }
 })
 
+// Deshace lo anterior: vuelve a dejar el partido como "scheduled" (el
+// estado con el que nace toda jornada, ver crearMatchdayAdHoc), por si el
+// entrenador lo marcó como jugado por error o quiere reabrirlo para
+// retocar convocatoria/alineación antes de darlo por bueno otra vez. No
+// intenta desarchivar los votos de la encuesta: son un archivo histórico,
+// no un estado que haya que revertir aquí.
+app.put('/api/calendario/:matchId/no-jugado', requireEntrenador(), async (req, res) => {
+  const matchId = Number(req.params.matchId)
+  const { data, error } = await supabase
+    .from('matchdays')
+    .update({ status: 'scheduled' })
+    .eq('id', matchId)
+    .select('id, jornada_number, match_date, opponent_club_id, is_home, status')
+    .maybeSingle()
+  if (error) return res.status(500).json({ error: error.message })
+  if (!data) return res.status(404).json({ error: 'Partido no encontrado en el calendario.' })
+  res.json(reconstruirPartidoCalendario(data, await getClubNameById()))
+})
+
 // Votos de convocatoria para una fecha concreta del calendario (no
 // necesariamente la activa), para el filtro histórico de AlineacionScreen.
 app.get('/api/convocatoria-por-fecha', async (req, res) => {
