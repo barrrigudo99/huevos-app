@@ -46,7 +46,7 @@ export default defineConfig({
   ],
   server: {
     host: true,
-    allowedHosts: ['.trycloudflare.com'],
+    allowedHosts: ['.trycloudflare.com', '.vercel.run'],
     proxy: apiProxy,
   },
   preview: { proxy: apiProxy },

@@ -61,9 +61,16 @@ export default function NextMatchCard({
   const isEntrenador = currentUser?.role === 'entrenador'
   const puedeNavegar = (onPrevMatch || onNextMatch) && (hasPrevMatch || hasNextMatch)
 
+  // Deslizar sobre la tarjeta navega entre jornadas igual que las flechas:
+  // swipe izquierda = siguiente, swipe derecha = anterior. Respeta los
+  // mismos límites (hasPrevMatch/hasNextMatch) que ya tienen los botones.
   const { handleTouchStart, handleTouchEnd } = useSwipe(
-    () => { if (hasNextMatch) onNextMatch?.() }, // swipe izquierda = siguiente
-    () => { if (hasPrevMatch) onPrevMatch?.() }  // swipe derecha = anterior
+    () => {
+      if (hasNextMatch) onNextMatch?.()
+    },
+    () => {
+      if (hasPrevMatch) onPrevMatch?.()
+    }
   )
 
   const navegacion = puedeNavegar && (
