@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ShieldCheck } from 'lucide-react'
+import huevosCrest from './icons/icon_huevos.png'
 import { ROLES } from '../data/users'
 import { loginUser, registerUser } from '../api'
 
@@ -72,7 +72,8 @@ export default function LoginScreen({ onLogin }) {
   return (
     <div className="auth">
       <div className="auth-brand">
-        <ShieldCheck size={32} color="var(--accent)" />
+        <img src={huevosCrest} alt="Escudo de Los Huevos" className="auth-crest" />
+        <p className="auth-kicker">LOS HUEVOS · FÚTBOL 7</p>
         <p className="auth-title">Futbol 7 Manager</p>
         <p className="auth-subtitle">Gestiona tu equipo, seas jugador o entrenador</p>
       </div>

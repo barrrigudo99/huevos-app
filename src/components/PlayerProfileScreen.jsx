@@ -12,6 +12,7 @@ import golesIcon from './icons/icons-perfil/goles.png'
 import asistenciasIcon from './icons/icons-perfil/asistencias.png'
 import tarjetasIcon from './icons/icons-perfil/tarjetas.png'
 
+
 // Paleta e identidad tipográfica del mockup aprobado — valores exactos, no
 // tocar (ver conversación de rediseño de Perfil).
 const COLORS = {
@@ -23,6 +24,15 @@ const COLORS = {
   rose: '#E0577A',
   line: '#DEDBC8',
   secondary: '#5B6F63',
+  // Colores de la equipación — cabecera de la tarjeta de perfil.
+  kitInk: '#0A0A0A',
+  kitRed: '#C41E2A',
+  kitSand: '#faf7f2',
+  kitGold: '#B8860B',
+  // Sectores del radar según el valor de la stat: apagado/grisáceo si es
+  // bajo, dorado con más brillo si supera el umbral.
+  kitGoldDim: '#b6b4b1',
+  kitGoldBright: '#eebc59'
 }
 
 const FONT_DISPLAY = "'Space Grotesk', sans-serif"
@@ -55,7 +65,7 @@ function sectorPath(cx, cy, centerAngle, radius) {
   return `M ${cx} ${cy} L ${start.x} ${start.y} A ${radius} ${radius} 0 0 1 ${end.x} ${end.y} Z`
 }
 
-function AttributeWheel({ data, max = 5, threshold = 3.5 }) {
+function AttributeWheel({ data, max = 5, threshold = 2.5 }) {
   const cx = 180
   const cy = 160
   const maxR = 66
@@ -71,24 +81,46 @@ function AttributeWheel({ data, max = 5, threshold = 3.5 }) {
   return (
     <svg width="100%" viewBox="0 0 360 320" style={{ display: 'block' }}>
       {Array.from({ length: max }, (_, i) => (i + 1) / max).map((f) => (
-        <circle key={f} cx={cx} cy={cy} r={maxR * f} fill="none" stroke="rgba(242,243,236,0.3)" strokeWidth={1.5} />
+        <circle key={f} cx={cx} cy={cy} r={maxR * f} fill="none" stroke="#3A3A3A" strokeWidth={1.5} />
       ))}
       {[45, 135, 225, 315].map((a) => {
         const p = polarPoint(cx, cy, a, maxR)
-        return <line key={a} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(242,243,236,0.3)" strokeWidth={1.5} />
+        return <line key={a} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#3A3A3A" strokeWidth={1.5} />
       })}
 
       {data.map((d, i) => {
         const angle = i * 90
         const radius = maxR * (d.value / max)
-        const weak = d.value < threshold
-        const fill = weak ? COLORS.rose : COLORS.grass
+        const gold = d.value >= threshold ? COLORS.kitGoldBright : COLORS.kitGoldDim
         const badgePos = polarPoint(cx, cy, angle, badgeOffset)
         const labelPos = polarPoint(cx, cy, angle, labelOffset)
+        const goldDark =
+          d.value >= 4 ? 'rgb(150, 130, 95)' :
+          d.value >= 2.5 ? 'rgb(120, 105, 78)' :
+          d.value >= 1 ? 'rgb(90, 78, 58)' :'rgb(60, 60, 60)'
+
         return (
           <g key={d.subject}>
-            <path d={sectorPath(cx, cy, angle, radius)} fill={fill} fillOpacity={0.8} />
-            <circle cx={badgePos.x} cy={badgePos.y} r={badgeR} fill={fill} stroke={COLORS.pitch} strokeWidth={2} />
+            <path
+              d={sectorPath(cx, cy, angle, radius)}
+              fill={gold}
+              fillOpacity={0.3}
+              stroke={gold}
+              strokeWidth={1.5}
+            />
+            <circle
+              cx={badgePos.x}
+              cy={badgePos.y}
+              r={badgeR}
+              fill={
+                d.value >= 4 ? 'rgb(139, 106, 48)' :
+                d.value >= 2.5 ? 'rgb(119, 109, 90)' :
+                d.value >= 1 ? 'rgb(65, 58, 48)' :
+                'rgb(58, 57, 57)'
+              }
+              stroke={COLORS.kitInk}
+              strokeWidth={2}
+            />             
             <text
               x={badgePos.x}
               y={badgePos.y + 4}
@@ -101,7 +133,7 @@ function AttributeWheel({ data, max = 5, threshold = 3.5 }) {
               x={labelPos.x}
               y={labelPos.y + 4}
               textAnchor={anchorFor(angle)}
-              style={{ fontFamily: FONT_BODY, fontSize: 11, fill: 'rgba(242,243,236,0.85)' }}
+              style={{ fontFamily: FONT_BODY, fontSize: 11, fill: '#E5E5E5' }}
             >
               {d.subject}
             </text>
@@ -112,10 +144,10 @@ function AttributeWheel({ data, max = 5, threshold = 3.5 }) {
   )
 }
 
-function Row({ label, value, accent, icon, last }) {
+function Row({ label, value, accent, icon, last, labelColor = COLORS.ink }) {
   return (
     <div className="profile-stat-row" style={{ borderBottom: last ? 'none' : `1px solid ${COLORS.line}` }}>
-      <span style={{ fontSize: 14, color: COLORS.ink, fontFamily: FONT_BODY }}>{label}</span>
+      <span style={{ fontSize: 14, color: labelColor, fontFamily: FONT_BODY }}>{label}</span>
       <span
         className="profile-stat-value"
         style={{
@@ -138,7 +170,7 @@ function TabBar({ active, onChange }) {
     { id: 'informacion', label: 'Información' },
   ]
   return (
-    <div className="profile-tabbar" style={{ backgroundColor: COLORS.line + '55' }}>
+    <div className="profile-tabbar" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
       {tabs.map((t) => {
         const isActive = active === t.id
         return (
@@ -152,8 +184,8 @@ function TabBar({ active, onChange }) {
               fontFamily: FONT_BODY,
               fontWeight: 500,
               fontSize: 13,
-              color: isActive ? COLORS.paper : COLORS.secondary,
-              backgroundColor: isActive ? COLORS.pitch : 'transparent',
+              color: isActive ? '#FFFFFF' : 'rgba(216,195,154,0.8)',
+              backgroundColor: isActive ? COLORS.kitRed : 'transparent',
               border: 'none',
               cursor: 'pointer',
             }}
@@ -191,19 +223,18 @@ const inputStyle = {
 function StatBadge({ icon, value, label }) {
   return (
     <div className="profile-statbadge">
-      <div className="profile-statbadge-icon" style={{ backgroundColor: COLORS.line + '66' }}>
+      <div className="profile-statbadge-icon" style={{ backgroundColor: COLORS.line }}>
         {icon}
       </div>
-      <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 19, color: COLORS.ink }}>{value}</span>
-      <span style={{ fontSize: 10.5, color: COLORS.secondary, marginTop: 2, textAlign: 'center' }}>{label}</span>
+      <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 19, color: '#FFFFFF' }}>{value}</span>
+      <span style={{ fontSize: 10.5, color: COLORS.paper, marginTop: 2, textAlign: 'center' }}>{label}</span>
     </div>
   )
 }
 
 function SeasonStatsRow({ stats }) {
   return (
-    <div className="profile-season-stats" style={{ border: `1px solid ${COLORS.line}`, backgroundColor: '#FFFFFF' }}>
-      <p style={{ fontSize: 12, color: COLORS.secondary, marginBottom: 12 }}>Temporada actual · Partidos oficiales</p>
+    <div className="profile-season-stats" style={{ border: `1px solid ${COLORS.line}` }}>
       <div className="profile-season-stats-row">
         <StatBadge
           icon={<img src={partidosIcon} alt="" className="profile-statbadge-img" />}
@@ -243,7 +274,7 @@ function EstadisticasTab({ stats }) {
     <>
       <SeasonStatsRow stats={stats} />
 
-      <div className="profile-wheel-card" style={{ backgroundColor: COLORS.pitch }}>
+      <div className="profile-wheel-card" style={{ backgroundColor: COLORS.kitInk }}>
         <div className="profile-wheel-header">
           <span style={{ fontSize: 12, color: 'rgba(242,243,236,0.65)' }}>Valoración media</span>
           <StarRating value={media} />
@@ -253,15 +284,15 @@ function EstadisticasTab({ stats }) {
 
       <div className="profile-attendance">
         <div className="profile-attendance-header">
-          <span style={{ fontSize: 13, color: COLORS.secondary }}>Asistencia a convocatorias</span>
-          <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 18, color: COLORS.ink }}>
+          <span style={{ fontSize: 13, color: COLORS.yolk }}>Asistencia a convocatorias</span>
+          <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 18, color: COLORS.yolk }}>
             {stats.attendancePct !== null ? `${stats.attendancePct}%` : '—'}
           </span>
         </div>
         <div className="profile-progress-track" style={{ height: 8, backgroundColor: COLORS.line }}>
           <div
             className="profile-progress-fill"
-            style={{ width: `${stats.attendancePct ?? 0}%`, backgroundColor: COLORS.grass }}
+            style={{ width: `${stats.attendancePct ?? 0}%`, backgroundColor: COLORS.yolk }}
           />
         </div>
       </div>
@@ -272,6 +303,7 @@ function EstadisticasTab({ stats }) {
           value={stats.mvpsRecibidos}
           accent
           last
+          labelColor={COLORS.yolk}
           icon={<Star size={14} color={COLORS.yolk} fill={COLORS.yolk} />}
         />
       </div>
@@ -538,44 +570,55 @@ export default function PlayerProfileScreen({ player, onBack, currentUser }) {
 
       {!loading && !error && profile && (
         <div className="profile-card" style={{ fontFamily: FONT_BODY }}>
-          <div className="profile-header-row">
-            <div
-              className="profile-avatar-circle"
-              style={{ width: 52, height: 52, backgroundColor: COLORS.pitch, border: `2px solid ${COLORS.grass}` }}
-            >
-              {profile.photo ? (
-                <img src={profile.photo} alt="Foto de perfil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 20, color: COLORS.paper }}>
-                  {profile.name.charAt(0)}
-                </span>
-              )}
+          <div
+            className="profile-hero"
+            style={{ backgroundColor: COLORS.kitInk, borderBottom: `3px solid ${COLORS.kitRed}` }}
+          >
+            <div className="profile-header-row">
+              <div
+                className="profile-avatar-circle"
+                style={{ width: 52, height: 52, backgroundColor: COLORS.kitRed, border: `2px solid ${COLORS.kitGold}` }}
+              >
+                {profile.photo ? (
+                  <img src={profile.photo} alt="Foto de perfil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 20, color: '#FFFFFF' }}>
+                    {profile.name.charAt(0)}
+                  </span>
+                )}
+              </div>
+              <div>
+                <p style={{ fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 17, color: COLORS.kitSand }}>
+                  {profile.name}
+                </p>
+                <p style={{ fontSize: 13, color: 'rgba(216,195,154,0.7)' }}>
+                  Huevos FC · {profile.positionLabel || 'Sin posición'}
+                </p>
+              </div>
             </div>
-            <div>
-              <p style={{ fontFamily: FONT_DISPLAY, fontWeight: 500, fontSize: 17, color: COLORS.ink }}>
-                {profile.name}
-              </p>
-              <p style={{ fontSize: 13, color: COLORS.secondary }}>Huevos FC · {profile.positionLabel || 'Sin posición'}</p>
-            </div>
+
+            <TabBar active={tab} onChange={setTab} />
           </div>
 
-          <TabBar active={tab} onChange={setTab} />
-
-          {tab === 'estadisticas' ? (
-            <EstadisticasTab stats={profile.stats} />
-          ) : isOwnProfile ? (
-            <InformacionTabEditable
-              playerId={profile.id}
-              currentUserId={currentUser.id}
-              initial={profile}
-              positions={positions}
-              onSaved={cargarPerfil}
-            />
-          ) : (
-            <InformacionTabReadOnly data={profile} />
-          )}
+          <div className="profile-body">
+            {tab === 'estadisticas' ? (
+              <EstadisticasTab stats={profile.stats} />
+            ) : isOwnProfile ? (
+              <InformacionTabEditable
+                playerId={profile.id}
+                currentUserId={currentUser.id}
+                initial={profile}
+                positions={positions}
+                onSaved={cargarPerfil}
+              />
+            ) : (
+              <InformacionTabReadOnly data={profile} />
+            )}
+          </div>
         </div>
       )}
     </div>
   )
 }
+
+AttributeWheel

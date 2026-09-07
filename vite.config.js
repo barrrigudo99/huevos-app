@@ -20,8 +20,8 @@ export default defineConfig({
       manifest: {
         name: 'Futbol 7 Manager',
         short_name: 'Huevos FC',
-        theme_color: '#0f6e56',
-        background_color: '#0f6e56',
+        theme_color: '#0d0e10',
+        background_color: '#0d0e10',
         display: 'standalone',
         icons: [
           {

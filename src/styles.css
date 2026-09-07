@@ -1,16 +1,16 @@
 :root {
-  --surface-0: #f4f3ef;
-  --surface-1: #ffffff;
-  --surface-2: #eef1ee;
-  --text-primary: #1c1c1a;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8b8a84;
-  --border: #dedcd4;
-  --accent: #0f6e56;
-  --accent-bg: #e1f5ee;
-  --gold: #c9971f;
-  --gold-bg: #fbf1dc;
-  --star-empty: #c9c7bd;
+  --surface-0: #0d0e10;
+  --surface-1: #15171a;
+  --surface-2: #1d2024;
+  --text-primary: #f5f1e8;
+  --text-secondary: #a8a59d;
+  --text-muted: #777873;
+  --border: #30343a;
+  --accent: #d9363e;
+  --accent-bg: #3a1d22;
+  --gold: #d6b36a;
+  --gold-bg: #332b1d;
+  --star-empty: #55575a;
   --radius: 10px;
 }
 
@@ -491,6 +491,51 @@ select {
   font-weight: 600;
 }
 .muted {
+  color: var(--text-secondary);
+}
+
+/* Pantalla de Estadísticas (rediseño "más limpio"): el espacio en blanco
+   entre bloques principales es el separador, no líneas ni bordes. Clase
+   extra sobre el mismo .stats de siempre, así el resto de pantallas que
+   comparten .stats (p.ej. PlayerProfileScreen) no heredan este gap. */
+.stats-groups {
+  gap: 38px;
+}
+.stats-section-title {
+  margin: 0 0 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+/* Máximos goleadores agrupados en una sola tarjeta en vez de líneas sueltas
+   (antes .feed/.feed-row, que sigue existiendo para MarcadorScreen). */
+.scorers-card {
+  background: var(--surface-1);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.scorer-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+.scorer-row:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+.scorer-row .avatar {
+  background: var(--surface-2);
+  color: var(--gold);
+}
+.scorer-name {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+.scorer-goals {
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
@@ -1166,24 +1211,189 @@ select {
   color: var(--text-muted);
 }
 
-/* Selector de partido dentro de Stats, solo para entrenador */
-.stats-match-picker {
+/* Historial de jornadas dentro de Stats (solo entrenador): calendario en
+   formato de tarjeta, de la jornada más reciente a la más antigua.
+   Reutiliza los tokens de tema (superficies, texto, --accent, --gold,
+   --radius) — nada de colores nuevos. Sustituye al selector de partido
+   plano que había antes (stats-match-picker). */
+.historial-jornadas {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   margin-bottom: 12px;
 }
-.stats-match-picker-item {
+/* Divisor entre la próxima jornada (pendiente) y el historial de jugadas —
+   solo se pinta si hay partidos en los dos grupos (ver HistorialJornadas). */
+.historial-jornadas-divider {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-1);
-  cursor: pointer;
-  font-size: 13px;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
+.historial-jornadas-divider::before,
+.historial-jornadas-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+/* Jornada pendiente (aún no disputada): glow dorado por defecto. Las
+   jornadas ya jugadas lo sustituyen por el color de su resultado (reglas
+   -victoria/-derrota/-empate de abajo, que van después en cascada). */
+.historial-jornada-card {
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  background: black;
+  padding: 18px;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px #c7a430, 0 0 16px -4px #7c6e09;
+}
+.historial-jornada-card:hover {
+  border-color: var(--accent);
+}
+/* Jornada ya jugada: mismo tratamiento "apagado" que usaba antes
+   stats-match-picker-item-played, para diferenciarla de las pendientes. */
+.historial-jornada-card-jugada {
+  background: var(--surface-2);
+  opacity: 0.7;
+}
+/* Estela de color que enmarca la tarjeta según el resultado: verde en
+   victoria, rojo-fucsia en derrota, gris neutro en empate. Las tres
+   comparten estructura (borde 1px + glow difuminado de 16px), solo cambia
+   el color, para que se vean consistentes entre sí. La opacity de
+   .historial-jornada-card-jugada de arriba atenúa también este halo. */
+.historial-jornada-card-victoria {
+  border-color: #2fa84f;
+  box-shadow: 0 0 0 1px #2fa84f, 0 0 16px -4px #2fa84f;
+}
+.historial-jornada-card-derrota {
+  border-color: #e23983;
+  box-shadow: 0 0 0 1px #c73030, 0 0 16px -4px #e23939;
+}
+.historial-jornada-card-empate {
+  border-color: #4a4d52;
+  box-shadow: 0 0 0 1px #4a4d52, 0 0 16px -4px rgba(74, 77, 82, 0.4);
+}
+.historial-jornada-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.historial-jornada-meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.historial-jornada-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.historial-jornada-badge-victoria {
+  color: #2fa84f;
+}
+.historial-jornada-badge-derrota {
+  color: #e2395e;
+}
+.historial-jornada-badge-empate {
+  color: var(--text-secondary);
+}
+.historial-jornada-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.historial-jornada-team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.historial-jornada-team-rival {
+  justify-content: flex-end;
+  text-align: right;
+}
+.historial-jornada-crest {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.historial-jornada-team-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.historial-jornada-score {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+.historial-jornada-fecha {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+/* Marca Los Huevos: tema oscuro, contraste alto y jerarquía deportiva. */
+.app-brand-lockup { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.app-crest { width: 34px; height: 34px; object-fit: contain; }
+.app-brand-lockup > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.app-kicker, .auth-kicker { color: var(--gold); font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.app-title { display: block; }
+.auth-crest { width: 82px; height: 82px; object-fit: contain; filter: drop-shadow(0 8px 18px rgba(0,0,0,.35)); }
+.auth-kicker { margin-top: 2px; }
+body { background: var(--surface-0); }
+.app { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+.app-header { padding-top: 18px; border-bottom: 1px solid rgba(214,179,106,.18); }
+.app-team { color: var(--gold); font-size: 11px; }
+.bottom-nav { background: var(--surface-1); border-top-color: var(--border); padding: 8px 0 max(8px, env(safe-area-inset-bottom)); }
+.nav-btn { color: var(--text-muted); font-weight: 600; }
+.nav-btn.active { color: var(--accent); }
+.nav-btn.active::before { content: ''; width: 22px; height: 2px; background: var(--accent); position: absolute; top: -8px; border-radius: 2px; }
+.nav-btn { position: relative; }
+.card, .metric, .scoreboard, .stats-panel-row { box-shadow: 0 8px 24px rgba(0,0,0,.14); }
+input, select { background: var(--surface-1); color: var(--text-primary); }
+input::placeholder { color: var(--text-muted); }
+input:focus, select:focus { outline: 2px solid var(--gold); outline-offset: 1px; border-color: var(--gold); }
+.btn-primary { background: var(--accent); font-weight: 700; }
+.btn-primary:hover:not(:disabled) { background: #ed4b52; }
+.btn-outline { border-color: var(--gold); color: var(--gold); }
+.auth { background: var(--surface-0); }
+.auth .card { background: var(--surface-1); border-color: var(--border); }
+.auth-tabs { background: var(--surface-1); }
+.auth-tab.active { background: var(--accent); }
+.status-dot-gray { background: #55575a; }
+.pitch { border: 1px solid var(--border); }
+.next-match-card-scheduled { background: linear-gradient(135deg, #b92732 0%, #651b25 100%); box-shadow: 0 10px 26px rgba(217,54,62,.24); }
+.next-match-card-played { background: linear-gradient(135deg, #3d4147 0%, #202226 100%); }
 .sheet-overlay {
   position: fixed;
   inset: 0;
@@ -1242,28 +1452,32 @@ select {
   }
 }
 
-.stats-match-picker-item:hover {
-  border-color: var(--accent);
-}
-/* Ya tiene estadísticas cargadas (status 'played'): solo aviso visual, sigue
-   siendo clicable para reabrir/editar sus estadísticas. */
-.stats-match-picker-item-played {
-  background: var(--surface-2);
-  color: var(--text-muted);
-  opacity: 0.7;
-}
 
 /* PlayerProfileScreen (rediseño con pestañas Estadísticas/Información).
    Layout puro aquí; los colores/tipografía/medidas de la identidad de marca
    aprobada van en style={{}} inline en el propio componente, no aquí. */
 .profile-card {
-  padding-top: 4px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid var(--border);
+}
+/* Banda de cabecera con los colores de la equipación (negro + rojo).
+   El cuerpo (.profile-body) se mantiene claro. */
+.profile-hero {
+  padding: 18px 16px 16px;
+  background-color: #0b0202;
+}
+.profile-body {
+  padding: 18px 16px 4px;
+  background-color: #0b0202;
+
 }
 .profile-header-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 .profile-avatar-circle {
   display: flex;
@@ -1278,6 +1492,9 @@ select {
   margin-bottom: 20px;
   padding: 4px;
   border-radius: 9999px;
+}
+.profile-hero .profile-tabbar {
+  margin-bottom: 0;
 }
 .profile-tab {
   flex: 1 1 0%;
@@ -1317,6 +1534,7 @@ select {
   border-radius: 16px;
   margin-bottom: 20px;
   padding: 16px;
+  background-color: rgb(10 10 10)
 }
 .profile-season-stats-row {
   display: flex;
@@ -1385,5 +1603,4 @@ select {
   width: 100%;
   border-radius: 12px;
 }
-
 
