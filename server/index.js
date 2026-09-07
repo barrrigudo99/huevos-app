@@ -31,7 +31,8 @@ const app = express()
 app.use(
   cors({
     origin: [
-      'https://huevos-app-three.vercel.app',
+      'https://huevos-nhm4xndhe-carlos-projects-e13f8134.vercel.app/',
+      /\.vercel\.app$/,
       'http://localhost:5173',
       /^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/,
     ],
