@@ -34,6 +34,7 @@ app.use(
       'https://huevos-app-three.vercel.app',
       'http://localhost:5173',
       /^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/,
+      /^https:\/\/huevos-[a-z0-9-]+-carlos-projects-e13f8134\.vercel\.app$/,
     ],
   })
 )

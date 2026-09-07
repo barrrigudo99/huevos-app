@@ -1,4 +1,5 @@
 import { BarChart2, Calendar, ChevronLeft, ChevronRight, Users } from 'lucide-react'
+import useSwipe from '../hooks/useSwipe'
 
 function iniciales(nombre) {
   return (nombre || '')
@@ -60,6 +61,18 @@ export default function NextMatchCard({
   const isEntrenador = currentUser?.role === 'entrenador'
   const puedeNavegar = (onPrevMatch || onNextMatch) && (hasPrevMatch || hasNextMatch)
 
+  // Deslizar sobre la tarjeta navega entre jornadas igual que las flechas:
+  // swipe izquierda = siguiente, swipe derecha = anterior. Respeta los
+  // mismos límites (hasPrevMatch/hasNextMatch) que ya tienen los botones.
+  const { handleTouchStart, handleTouchEnd } = useSwipe(
+    () => {
+      if (hasNextMatch) onNextMatch?.()
+    },
+    () => {
+      if (hasPrevMatch) onPrevMatch?.()
+    }
+  )
+
   const navegacion = puedeNavegar && (
     <div className="next-match-nav">
       <button
@@ -99,6 +112,8 @@ export default function NextMatchCard({
         onClick={onOpenLineup}
         role={onOpenLineup ? 'button' : undefined}
         tabIndex={onOpenLineup ? 0 : undefined}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         {navegacion}
         <p className="next-match-empty-text">Todavía no hay próximo partido configurado.</p>
@@ -130,6 +145,8 @@ export default function NextMatchCard({
       onClick={onOpenLineup}
       role={onOpenLineup ? 'button' : undefined}
       tabIndex={onOpenLineup ? 0 : undefined}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       {navegacion || <span className="next-match-tag">Próximo partido</span>}
 
