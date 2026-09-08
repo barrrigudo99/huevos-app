@@ -11,14 +11,15 @@ import tarjetaAmarillaIcon from './icons/tarjeta_amarilla.png'
 import tarjetaRojaIcon from './icons/tarjeta_roja.png'
 import dobleAmarillaIcon from './icons/doble_amarilla.png'
 
+// Huecos del 1-3-2-1, con la y repartida para que las cartas no se solapen.
 const SLOTS = [
-  { id: 'gk', pos: 'POR', x: 50, y: 90 },
-  { id: 'cen', pos: 'CEN', x: 50, y: 72 },
-  { id: 'lat1', pos: 'LAT', x: 18, y: 62 },
-  { id: 'lat2', pos: 'LAT', x: 82, y: 62 },
-  { id: 'vol1', pos: 'VOL', x: 30, y: 36 },
-  { id: 'vol2', pos: 'VOL', x: 70, y: 36 },
-  { id: 'fw', pos: 'DEL', x: 50, y: 12 },
+  { id: 'fw', pos: 'DEL', x: 50, y: 13 },
+  { id: 'vol1', pos: 'VOL', x: 24, y: 33 },
+  { id: 'vol2', pos: 'VOL', x: 76, y: 32 },
+  { id: 'lat1', pos: 'LAT', x: 17, y: 58 },
+  { id: 'lat2', pos: 'LAT', x: 83, y: 57 },
+  { id: 'cen', pos: 'CEN', x: 50, y: 67 },
+  { id: 'gk', pos: 'POR', x: 50, y: 89 },
 ]
 
 function generateLineup(pool, slots, attendanceById) {
@@ -54,6 +55,77 @@ function generateLineup(pool, slots, attendanceById) {
   return { assignments, offPosition }
 }
 
+// Iconos de las acciones que se pintan en la placa de la carta. La roja directa
+// y la doble amarilla comparten tarjetaRoja=true en los datos (ver esExpulsado
+// en MatchStatsPanel); amarillas distingue cuál de las dos fue.
+function statsToIcons(stats) {
+  if (!stats) return []
+  const icons = []
+  if (stats.goles > 0) icons.push({ src: golIcon, alt: 'Gol', n: stats.goles })
+  if (stats.asistencias > 0) icons.push({ src: asistenciaIcon, alt: 'Asistencia', n: stats.asistencias })
+  if (stats.amarillas >= 2) icons.push({ src: dobleAmarillaIcon, alt: 'Doble amarilla', n: 1, card: true })
+  else if (stats.tarjetaRoja) icons.push({ src: tarjetaRojaIcon, alt: 'Tarjeta roja', n: 1, card: true })
+  else if (stats.amarillas === 1) icons.push({ src: tarjetaAmarillaIcon, alt: 'Tarjeta amarilla', n: 1, card: true })
+  return icons
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  )
+}
+
+// Carta tipo "cromo" de un jugador: zona de foto con dorsal y estado, y placa
+// inferior con nombre, posición y los iconos de sus acciones en el partido.
+function LineupCard({ player, pos, offPosition = false, stats = null, showStatus = false, onClick }) {
+  const icons = statsToIcons(stats)
+  const Tag = onClick ? 'button' : 'div'
+  return (
+    <Tag
+      type={onClick ? 'button' : undefined}
+      className="al-card"
+      onClick={onClick}
+      title={offPosition ? `${player.name} (fuera de posición)` : player.name}
+    >
+      <div className="al-card-photo">
+        <span className="al-card-stripe al-card-stripe-red" />
+        <span className="al-card-stripe al-card-stripe-gold" />
+        <span className="al-card-dorsal">{player.number}</span>
+        {showStatus &&
+          (offPosition ? (
+            <span className="al-card-status al-card-status-off">*</span>
+          ) : (
+            <span className="al-card-status al-card-status-ok">
+              <CheckIcon />
+            </span>
+          ))}
+        <div className="al-card-avatar">
+          <PlayerAvatar player={player} fallback="initials" />
+        </div>
+      </div>
+      <div className="al-card-plate">
+        <p className="al-card-name">{player.name.split(' ')[0]}</p>
+        <p className="al-card-pos">
+          {pos}
+          {offPosition ? ' *' : ''}
+        </p>
+        {icons.length > 0 && (
+          <div className="al-card-icons">
+            {icons.map((ic, i) => (
+              <span key={i} className={`al-card-icon ${ic.card ? 'al-card-icon-card' : ''}`} title={ic.alt}>
+                <img src={ic.src} alt={ic.alt} />
+                {ic.n > 1 && <span className="al-card-mult">×{ic.n}</span>}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </Tag>
+  )
+}
+
 export default function AlineacionScreen({
   players,
   convocadosDelPartido,
@@ -71,8 +143,8 @@ export default function AlineacionScreen({
   // 'lineup' = la pizarra de siempre; 'rating' = panel "Valorar partido".
   const [view, setView] = useState('lineup')
   // Quién marcó gol/asistencia/tarjeta en este partido concreto, para pintar
-  // el icono correspondiente en su pitch-slot. Solo tiene sentido una vez
-  // jugado (antes no hay player_match_stats que consultar).
+  // el icono correspondiente en su carta. Solo tiene sentido una vez jugado
+  // (antes no hay player_match_stats que consultar).
   const [statsByPlayerId, setStatsByPlayerId] = useState({})
 
   useEffect(() => {
@@ -197,131 +269,110 @@ export default function AlineacionScreen({
   }
 
   return (
-    <div className="pitch-wrap">
-      <div className="plantilla-toolbar">
+    <div className="al-wrap">
+      <div className="al-status">
+        <span className="al-status-label">
+          {jugado ? 'Alineación · partido jugado' : 'Alineación · por jugar'}
+        </span>
+      </div>
+
+      <div className="al-panel">
+        <div className="al-rate-row">
+          <button
+            type="button"
+            className="al-rate-btn"
+            disabled={!jugado}
+            onClick={() => setView('rating')}
+          >
+            {jugado ? 'Valorar partido' : 'Disponible tras el partido'}
+          </button>
+        </div>
+
+        <p className="al-label">
+          Convocatoria ({convocadoPlayers.length}/{players.length})
+        </p>
+        <div className="al-chips">
+          {players.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`al-chip ${convocados.includes(p.id) ? 'selected' : ''}`}
+              onClick={() => toggleConvocado(p.id)}
+            >
+              {p.number} {p.name.split(' ')[0]}
+            </button>
+          ))}
+        </div>
+
         <button
           type="button"
-          className="rate-match-btn"
-          disabled={!jugado}
-          onClick={() => setView('rating')}
+          className="al-generate"
+          onClick={handleGenerate}
+          disabled={convocadoPlayers.length === 0}
         >
-          {jugado ? 'Valorar partido' : 'Disponible tras el partido'}
+          Generar alineación prevista
         </button>
-      </div>
 
-      <p className="hint">
-        Convocatoria ({convocadoPlayers.length}/{players.length})
-      </p>
-      <div className="call-list">
-        {players.map((p) => (
-          <button
-            key={p.id}
-            className={`call-chip ${convocados.includes(p.id) ? 'selected' : ''}`}
-            onClick={() => toggleConvocado(p.id)}
-          >
-            {p.number} {p.name.split(' ')[0]}
-          </button>
-        ))}
-      </div>
-
-      <button
-        className="btn-primary full-width"
-        onClick={handleGenerate}
-        disabled={convocadoPlayers.length === 0}
-      >
-        Generar alineación prevista
-      </button>
-
-      <div
-        className={`pitch ${jugado ? '' : 'pitch-locked'}`}
-        style={{ backgroundImage: `url(${jugado ? campoAlineacionGris : campoAlineacion})` }}
-      >
-        {SLOTS.map((slot) => {
-          const player = players.find((p) => p.id === assignments[slot.id])
-          const isOffPosition = offPositionSlots.has(slot.id)
-          const style = { left: slot.x + '%', top: slot.y + '%' }
-          const playerStats = player ? statsByPlayerId[player.id] : null
-          return (
-            <div className="pitch-slot" key={slot.id} style={style}>
-              <span className="pitch-slot-pos">{slot.pos}</span>
-              {player ? (
-                <button
-                  type="button"
-                  className="pitch-slot-photo"
-                  onClick={() => assign(slot.id, '')}
-                  title={isOffPosition ? `${player.name} (fuera de posición)` : player.name}
-                >
-                  <PlayerAvatar player={player} size="sm" fallback="blank" />
-                  {isOffPosition && <span className="pitch-slot-star">*</span>}
-                  {playerStats && (
-                    <span className="pitch-slot-badges">
-                      {playerStats.goles > 0 && (
-                        <span
-                          className="pitch-badge"
-                          title={`${playerStats.goles} gol${playerStats.goles > 1 ? 'es' : ''}`}
-                        >
-                          <img src={golIcon} alt="Gol" className="pitch-badge-icon" />
-                          {playerStats.goles > 1 && playerStats.goles}
-                        </span>
-                      )}
-                      {playerStats.asistencias > 0 && (
-                        <span
-                          className="pitch-badge"
-                          title={`${playerStats.asistencias} asistencia${playerStats.asistencias > 1 ? 's' : ''}`}
-                        >
-                          <img src={asistenciaIcon} alt="Asistencia" className="pitch-badge-icon" />
-                          {playerStats.asistencias > 1 && playerStats.asistencias}
-                        </span>
-                      )}
-                      {/* Doble amarilla y roja directa comparten tarjetaRoja=true en los
-                          datos (ver esExpulsado en MatchStatsPanel); amarillas distingue
-                          cuál de las dos fue. */}
-                      {playerStats.amarillas >= 2 ? (
-                        <span className="pitch-badge pitch-badge-card" title="Doble amarilla (expulsado)">
-                          <img src={dobleAmarillaIcon} alt="Doble amarilla" className="pitch-badge-icon" />
-                        </span>
-                      ) : playerStats.tarjetaRoja ? (
-                        <span className="pitch-badge pitch-badge-card" title="Tarjeta roja">
-                          <img src={tarjetaRojaIcon} alt="Tarjeta roja" className="pitch-badge-icon" />
-                        </span>
-                      ) : playerStats.amarillas === 1 ? (
-                        <span className="pitch-badge pitch-badge-card" title="Tarjeta amarilla">
-                          <img src={tarjetaAmarillaIcon} alt="Tarjeta amarilla" className="pitch-badge-icon" />
-                        </span>
-                      ) : null}
-                    </span>
-                  )}
-                </button>
-              ) : (
-                <select value={assignments[slot.id] ?? ''} onChange={(e) => assign(slot.id, e.target.value)}>
-                  <option value="">-</option>
-                  {convocadoPlayers.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.number}
-                      {(p.positions || []).includes(slot.pos) ? '' : ' *'}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-          )
-        })}
-      </div>
-      <p className="hint">* fuera de su posición habitual</p>
-
-      {suplentes.length > 0 && (
-        <>
-          <p className="hint">Suplentes</p>
-          <div className="bench-list">
-            {suplentes.map((p) => (
-              <div className="bench-player" key={p.id}>
-                <PlayerAvatar player={p} size="sm" fallback="blank" />
-                <span className="bench-player-name">{p.name.split(' ')[0]}</span>
+        <div className={`al-pitch ${jugado ? 'played' : ''}`}>
+          <div
+            className="al-pitch-bg"
+            style={{ backgroundImage: `url(${jugado ? campoAlineacionGris : campoAlineacion})` }}
+          />
+          {SLOTS.map((slot) => {
+            const player = players.find((p) => p.id === assignments[slot.id])
+            const isOffPosition = offPositionSlots.has(slot.id)
+            const style = { left: slot.x + '%', top: slot.y + '%' }
+            return (
+              <div className="al-slot" key={slot.id} style={style}>
+                {player ? (
+                  <LineupCard
+                    player={player}
+                    pos={slot.pos}
+                    offPosition={isOffPosition}
+                    stats={statsByPlayerId[player.id] || null}
+                    showStatus={!jugado}
+                    onClick={() => assign(slot.id, '')}
+                  />
+                ) : (
+                  <label className="al-slot-empty">
+                    <span className="al-slot-pos">{slot.pos}</span>
+                    <select
+                      value={assignments[slot.id] ?? ''}
+                      onChange={(e) => assign(slot.id, e.target.value)}
+                    >
+                      <option value="">–</option>
+                      {convocadoPlayers.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.number}
+                          {(p.positions || []).includes(slot.pos) ? '' : ' *'}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
               </div>
-            ))}
-          </div>
-        </>
-      )}
+            )
+          })}
+        </div>
+        <p className="al-label al-label-muted">* fuera de su posición habitual</p>
+
+        {suplentes.length > 0 && (
+          <>
+            <p className="al-label">Suplentes</p>
+            <div className="al-bench">
+              {suplentes.map((p) => (
+                <LineupCard
+                  key={p.id}
+                  player={p}
+                  pos={(p.positions || [])[0] || '—'}
+                  stats={statsByPlayerId[p.id] || null}
+                  showStatus={!jugado}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   )
 }

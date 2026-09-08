@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronLeft, Star, Camera, Lock } from 'lucide-react'
+import { ChevronLeft, Star, Camera } from 'lucide-react'
 import {
   fetchPlayerProfile,
   fetchPositions,
@@ -34,6 +34,7 @@ const COLORS = {
   kitGoldDim: '#b6b4b1',
   kitGoldBright: '#eebc59'
 }
+
 
 const FONT_DISPLAY = "'Space Grotesk', sans-serif"
 const FONT_BODY = "'IBM Plex Sans', sans-serif"
@@ -457,10 +458,6 @@ function InformacionTabEditable({ playerId, currentUserId, initial, positions, o
         />
       </Field>
 
-      <div className="profile-password-heading" style={{ color: COLORS.secondary }}>
-        <Lock size={14} />
-        <span style={{ fontSize: 12 }}>Cambiar contraseña</span>
-      </div>
       <Field label="Contraseña actual">
         <input
           type="password"
@@ -497,7 +494,7 @@ function InformacionTabEditable({ playerId, currentUserId, initial, positions, o
         disabled={saving}
         style={{
           padding: '12px 0',
-          backgroundColor: COLORS.pitch,
+          backgroundColor: COLORS.kitRed,
           color: COLORS.paper,
           fontFamily: FONT_BODY,
           fontWeight: 500,
