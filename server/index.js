@@ -216,16 +216,47 @@ async function getSeasonMatchdayIds(seasonId) {
   return data.map((m) => m.id)
 }
 
-// Cuenta en cuántos partidos de `matchdayIds` fue `playerId` el más votado en
-// match_mvp_votes. Si dos o más jugadores empatan a más votos en un partido,
-// ese partido no cuenta como MVP para nadie (decisión de producto: no hay un
-// criterio de desempate no arbitrario entre compañeros).
-async function contarMvpsGanados(matchdayIds, playerId) {
-  if (matchdayIds.length === 0) return 0
+// Jornadas de la temporada que el equipo YA ha jugado (matchdays.status =
+// 'played'). Es el denominador del % de asistencia a convocatorias: ese
+// porcentaje se mide siempre contra las jornadas jugadas por el EQUIPO, no
+// contra las veces que se convocó a cada jugador.
+async function getPlayedMatchdayIds(seasonId) {
+  const { data, error } = await supabase
+    .from('matchdays')
+    .select('id')
+    .eq('season_id', seasonId)
+    .eq('status', 'played')
+  if (error) throw new Error(error.message)
+  return data.map((m) => m.id)
+}
+
+// Asistencias a convocatoria (call_ups.attended = true) por jugador dentro de
+// un conjunto de jornadas. Devuelve Map player_id -> nº de jornadas asistidas.
+// El % se calcula fuera dividiendo entre getPlayedMatchdayIds().length.
+async function contarAsistenciasPorJugador(matchdayIds) {
+  if (matchdayIds.length === 0) return new Map()
+  const { data, error } = await supabase
+    .from('call_ups')
+    .select('player_id')
+    .eq('attended', true)
+    .in('matchday_id', matchdayIds)
+  if (error) throw new Error(error.message)
+  const porJugador = new Map()
+  for (const r of data) porJugador.set(r.player_id, (porJugador.get(r.player_id) || 0) + 1)
+  return porJugador
+}
+
+// Cuenta, para cada jugador, en cuántos partidos de `matchdayIds` fue el más
+// votado en match_mvp_votes. Si dos o más jugadores empatan a más votos en un
+// partido, ese partido no cuenta como MVP para nadie (decisión de producto: no
+// hay un criterio de desempate no arbitrario entre compañeros). Devuelve un
+// Map player_id -> número de MVPs.
+async function contarMvpsPorJugador(matchdayIds) {
+  if (matchdayIds.length === 0) return new Map()
   const { data: matches, error: matchesErr } = await supabase.from('matches').select('id').in('matchday_id', matchdayIds)
   if (matchesErr) throw new Error(matchesErr.message)
   const matchIds = matches.map((m) => m.id)
-  if (matchIds.length === 0) return 0
+  if (matchIds.length === 0) return new Map()
 
   const { data: votos, error: votosErr } = await supabase
     .from('match_mvp_votes')
@@ -240,7 +271,7 @@ async function contarMvpsGanados(matchdayIds, playerId) {
     porJugador.set(v.player_id, (porJugador.get(v.player_id) || 0) + 1)
   }
 
-  let count = 0
+  const mvpsPorJugador = new Map()
   for (const porJugador of votosPorMatch.values()) {
     let max = 0
     let ganadores = []
@@ -252,9 +283,16 @@ async function contarMvpsGanados(matchdayIds, playerId) {
         ganadores.push(pid)
       }
     }
-    if (ganadores.length === 1 && ganadores[0] === playerId) count++
+    if (ganadores.length === 1) {
+      mvpsPorJugador.set(ganadores[0], (mvpsPorJugador.get(ganadores[0]) || 0) + 1)
+    }
   }
-  return count
+  return mvpsPorJugador
+}
+
+// MVPs ganados por un solo jugador en `matchdayIds` (ver contarMvpsPorJugador).
+async function contarMvpsGanados(matchdayIds, playerId) {
+  return (await contarMvpsPorJugador(matchdayIds)).get(playerId) || 0
 }
 
 // Ficha completa de un jugador para PlayerProfileScreen: datos personales +
@@ -280,9 +318,12 @@ app.get('/api/players/:id/profile', async (req, res) => {
       ? (await supabase.from('positions').select('name, short_code').eq('id', player.position_id).maybeSingle()).data
       : null
 
-    const matchdayIds = await getSeasonMatchdayIds(season.id)
+    const [matchdayIds, playedMatchdayIds] = await Promise.all([
+      getSeasonMatchdayIds(season.id),
+      getPlayedMatchdayIds(season.id),
+    ])
 
-    const [{ data: statsRow, error: statsErr }, { data: callUps, error: callUpsErr }] = await Promise.all([
+    const [{ data: statsRow, error: statsErr }, asistenciasPorJugador] = await Promise.all([
       supabase
         .from('season_player_stats')
         .select(
@@ -291,15 +332,17 @@ app.get('/api/players/:id/profile', async (req, res) => {
         .eq('player_id', playerId)
         .eq('season_id', season.id)
         .maybeSingle(),
-      matchdayIds.length > 0
-        ? supabase.from('call_ups').select('attended').eq('player_id', playerId).in('matchday_id', matchdayIds)
-        : Promise.resolve({ data: [], error: null }),
+      contarAsistenciasPorJugador(playedMatchdayIds),
     ])
     if (statsErr) throw new Error(statsErr.message)
-    if (callUpsErr) throw new Error(callUpsErr.message)
 
+    // % sobre las jornadas jugadas por el equipo: null solo mientras el equipo
+    // no ha jugado ninguna; en cuanto hay partidos, un jugador que no asistió a
+    // ninguno es 0 %, no "sin datos".
     const attendancePct =
-      callUps.length > 0 ? Math.round((callUps.filter((c) => c.attended === true).length / callUps.length) * 100) : null
+      playedMatchdayIds.length > 0
+        ? Math.round(((asistenciasPorJugador.get(playerId) || 0) / playedMatchdayIds.length) * 100)
+        : null
 
     const mvpsRecibidos = await contarMvpsGanados(matchdayIds, playerId)
 
@@ -325,6 +368,162 @@ app.get('/api/players/:id/profile', async (req, res) => {
         mvpsRecibidos,
       },
     })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Histórico de notas por jornada + últimos 8 partidos con nota, para las
+// secciones "Evolución por jornada" y "Últimos partidos" del perfil.
+//
+// player_ratings NO tiene columna `score`: la nota de un voto es la media de
+// (impacto + esfuerzo + equipo + liderazgo) / 4, y puede haber varios
+// votantes por partido y jugador, así que primero se promedia por (partido,
+// jugador) y luego se agrega. `teamRating` incluye al propio jugador en la
+// media del equipo (si algún día se quiere "el resto del equipo", filtrar
+// player_id <> playerId en la media de `all`).
+app.get('/api/players/:id/ratings-history', async (req, res) => {
+  const playerId = Number(req.params.id)
+  try {
+    const season = req.query.season ? { id: Number(req.query.season) } : await getCurrentSeason()
+
+    const { data: mdRows, error: mdErr } = await supabase
+      .from('matchdays')
+      .select('id, jornada_number, match_date, opponent_club_id, is_home')
+      .eq('season_id', season.id)
+    if (mdErr) throw new Error(mdErr.message)
+    const matchdayById = new Map(mdRows.map((m) => [m.id, m]))
+    const seasonMatchdayIds = mdRows.map((m) => m.id)
+    if (seasonMatchdayIds.length === 0) return res.json({ evolution: [], lastMatches: [] })
+
+    const { data: matchRows, error: matchErr } = await supabase
+      .from('matches')
+      .select('id, matchday_id, goals_for, goals_against')
+      .in('matchday_id', seasonMatchdayIds)
+    if (matchErr) throw new Error(matchErr.message)
+    const matchById = new Map(matchRows.map((m) => [m.id, m]))
+    const matchIds = matchRows.map((m) => m.id)
+    if (matchIds.length === 0) return res.json({ evolution: [], lastMatches: [] })
+
+    // player_ratings -> nota media por (match, player) (varios votantes).
+    const { data: ratingRows, error: ratErr } = await supabase
+      .from('player_ratings')
+      .select('match_id, player_id, impacto, esfuerzo, equipo, liderazgo')
+      .in('match_id', matchIds)
+      .not('impacto', 'is', null)
+    if (ratErr) throw new Error(ratErr.message)
+
+    const votos = new Map() // `${match}|${player}` -> { sum, n }
+    for (const r of ratingRows) {
+      const nota = (r.impacto + r.esfuerzo + r.equipo + r.liderazgo) / 4
+      const k = `${r.match_id}|${r.player_id}`
+      const acc = votos.get(k) || { sum: 0, n: 0 }
+      acc.sum += nota
+      acc.n += 1
+      votos.set(k, acc)
+    }
+    const notaPorPartido = new Map() // match_id -> Map(player_id -> nota media)
+    for (const [k, acc] of votos) {
+      const [mid, pid] = k.split('|').map(Number)
+      if (!notaPorPartido.has(mid)) notaPorPartido.set(mid, new Map())
+      notaPorPartido.get(mid).set(pid, acc.sum / acc.n)
+    }
+
+    const round2 = (x) => Math.round(x * 100) / 100
+    const mean = (arr) => arr.reduce((s, v) => s + v, 0) / arr.length
+
+    // §1 evolución: agrupar por (jornada, fecha); HAVING el jugador tiene nota.
+    const grupos = new Map()
+    for (const [mid, porJugador] of notaPorPartido) {
+      const md = matchdayById.get(matchById.get(mid)?.matchday_id)
+      if (!md) continue
+      const gk = `${md.jornada_number}|${md.match_date}`
+      if (!grupos.has(gk)) grupos.set(gk, { matchday: md.jornada_number, date: md.match_date, player: [], all: [] })
+      const g = grupos.get(gk)
+      for (const [pid, nota] of porJugador) {
+        g.all.push(nota)
+        if (pid === playerId) g.player.push(nota)
+      }
+    }
+    const evolution = [...grupos.values()]
+      .filter((g) => g.player.length > 0)
+      .map((g) => ({
+        matchday: g.matchday,
+        date: g.date,
+        rating: round2(mean(g.player)),
+        teamRating: round2(mean(g.all)),
+      }))
+      .sort((a, b) => a.matchday - b.matchday)
+
+    // §2 últimos partidos: solo aquellos con player_match_stats del jugador.
+    const { data: pmsRows, error: pmsErr } = await supabase
+      .from('player_match_stats')
+      .select('match_id, goals, assists, yellow_cards, red_cards')
+      .eq('player_id', playerId)
+      .in('match_id', matchIds)
+    if (pmsErr) throw new Error(pmsErr.message)
+    const pmsByMatch = new Map(pmsRows.map((r) => [r.match_id, r]))
+
+    const { data: mvpRows, error: mvpErr } = await supabase
+      .from('match_mvp_votes')
+      .select('match_id, player_id')
+      .in('match_id', matchIds)
+    if (mvpErr) throw new Error(mvpErr.message)
+    const mvpCounts = new Map()
+    for (const v of mvpRows) {
+      if (!mvpCounts.has(v.match_id)) mvpCounts.set(v.match_id, new Map())
+      const c = mvpCounts.get(v.match_id)
+      c.set(v.player_id, (c.get(v.player_id) || 0) + 1)
+    }
+    const mvpByMatch = new Map()
+    for (const [mid, c] of mvpCounts) {
+      let best = null
+      let bestN = 0
+      for (const [pid, n] of c) {
+        if (n > bestN) {
+          bestN = n
+          best = pid
+        }
+      }
+      mvpByMatch.set(mid, best)
+    }
+
+    const clubIds = [...new Set(mdRows.map((m) => m.opponent_club_id).filter(Boolean))]
+    const { data: clubRows, error: clubErr } = clubIds.length
+      ? await supabase.from('clubs').select('id, name').in('id', clubIds)
+      : { data: [], error: null }
+    if (clubErr) throw new Error(clubErr.message)
+    const clubNameById = new Map(clubRows.map((c) => [c.id, c.name]))
+
+    const lastMatches = matchRows
+      .filter((m) => pmsByMatch.has(m.id))
+      .map((m) => {
+        const md = matchdayById.get(m.matchday_id)
+        const pms = pmsByMatch.get(m.id) || {}
+        const notas = notaPorPartido.get(m.id)
+        const miNota = notas && notas.has(playerId) ? notas.get(playerId) : null
+        const gf = m.goals_for
+        const ga = m.goals_against
+        return {
+          matchday: md?.jornada_number ?? null,
+          date: md?.match_date ?? null,
+          opponent: md ? clubNameById.get(md.opponent_club_id) || null : null,
+          home: md?.is_home ?? null,
+          goalsFor: gf,
+          goalsAgainst: ga,
+          result: gf > ga ? 'W' : gf < ga ? 'L' : 'D',
+          rating: miNota != null ? round2(miNota) : null,
+          goals: pms.goals || 0,
+          assists: pms.assists || 0,
+          yellowCards: pms.yellow_cards || 0,
+          redCards: pms.red_cards || 0,
+          mvp: mvpByMatch.get(m.id) === playerId,
+        }
+      })
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+      .slice(0, 8)
+
+    res.json({ evolution, lastMatches })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -1072,6 +1271,74 @@ app.get('/api/player-match-stats', async (req, res) => {
       stats[row.player_id] = s
     }
     res.json(stats)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Ranking de toda la plantilla de una temporada (la activa por defecto, o
+// ?season=<id>) para TeamRankingCard en StatsScreen: una fila por jugador
+// activo del roster de esa temporada con goles, asistencias, % de
+// convocatorias asistidas, MVPs y valoración media (media de los 4 atributos
+// valorables; null si el jugador aún no tiene votos). Ordena por valoración
+// desc, los null al final. Solo lectura.
+app.get('/api/stats/ranking', async (req, res) => {
+  try {
+    const season = req.query.season ? { id: Number(req.query.season) } : await getCurrentSeason()
+
+    const [rosterRes, statsRes, matchdayIds, playedMatchdayIds] = await Promise.all([
+      supabase.from('player_season_roster').select('player_id').eq('season_id', season.id),
+      supabase
+        .from('season_player_stats')
+        .select('player_id, total_goals, total_assists, avg_impacto, avg_esfuerzo, avg_equipo, avg_liderazgo')
+        .eq('season_id', season.id),
+      getSeasonMatchdayIds(season.id),
+      getPlayedMatchdayIds(season.id),
+    ])
+    if (rosterRes.error) throw new Error(rosterRes.error.message)
+    if (statsRes.error) throw new Error(statsRes.error.message)
+
+    const rosterIds = rosterRes.data.map((r) => r.player_id)
+    if (rosterIds.length === 0) return res.json([])
+
+    const [{ data: players, error: playersErr }, mvpsPorJugador, asistenciasPorJugador] = await Promise.all([
+      supabase.from('players').select('id, full_name, photo_url').in('id', rosterIds).eq('active', true),
+      contarMvpsPorJugador(matchdayIds),
+      contarAsistenciasPorJugador(playedMatchdayIds),
+    ])
+    if (playersErr) throw new Error(playersErr.message)
+
+    const statsById = new Map(statsRes.data.map((s) => [s.player_id, s]))
+
+    // % de asistencia sobre las jornadas jugadas por el equipo (igual criterio
+    // que /api/players/:id/profile). null solo si el equipo no ha jugado aún.
+    const attendancePctDe = (playerId) =>
+      playedMatchdayIds.length > 0
+        ? Math.round(((asistenciasPorJugador.get(playerId) || 0) / playedMatchdayIds.length) * 100)
+        : null
+
+    const rows = players.map((p) => {
+      const s = statsById.get(p.id)
+      const rating =
+        s && s.avg_impacto != null
+          ? Math.round(
+              ((Number(s.avg_impacto) + Number(s.avg_esfuerzo) + Number(s.avg_equipo) + Number(s.avg_liderazgo)) / 4) * 100
+            ) / 100
+          : null
+      return {
+        id: p.id,
+        name: p.full_name,
+        photo: p.photo_url,
+        goals: Number(s?.total_goals ?? 0),
+        assists: Number(s?.total_assists ?? 0),
+        attendancePct: attendancePctDe(p.id),
+        mvps: mvpsPorJugador.get(p.id) ?? 0,
+        rating,
+      }
+    })
+
+    rows.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1))
+    res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

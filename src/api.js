@@ -36,6 +36,13 @@ export function fetchPlayerProfile(playerId) {
   return request(`/players/${playerId}/profile`)
 }
 
+// Histórico de notas por jornada + últimos partidos con nota del jugador.
+// Devuelve { evolution: [{ matchday, date, rating, teamRating }], lastMatches: [...] }.
+export function fetchRatingsHistory(playerId, season) {
+  const qs = season != null ? `?season=${encodeURIComponent(season)}` : ''
+  return request(`/players/${playerId}/ratings-history${qs}`)
+}
+
 export function updatePlayerProfile(playerId, data, userId) {
   return request(`/players/${playerId}`, {
     method: 'PUT',
@@ -123,6 +130,14 @@ export function fetchPlayerMatchStats() {
 
 export function fetchEstadisticasPersonales() {
   return request('/estadisticas-personales')
+}
+
+// Ranking de la plantilla de la temporada (activa por defecto) para
+// TeamRankingCard: [{ id, name, photo, goals, assists, attendancePct, mvps,
+// rating }], ordenado por valoración desc.
+export function fetchRanking(season) {
+  const qs = season != null ? `?season=${encodeURIComponent(season)}` : ''
+  return request(`/stats/ranking${qs}`)
 }
 
 export function saveEstadisticasPersonalesPartido(matchId, jugadores, userId) {

@@ -1,17 +1,13 @@
 import { useEffect, useState } from 'react'
-import { ChevronLeft, Star, Camera } from 'lucide-react'
+import { ChevronLeft, Camera, Star } from 'lucide-react'
 import {
   fetchPlayerProfile,
   fetchPositions,
+  fetchRatingsHistory,
   updatePlayerProfile,
   uploadPlayerPhoto,
   changePassword,
 } from '../api'
-import partidosIcon from './icons/icons-perfil/partidos.png'
-import golesIcon from './icons/icons-perfil/goles.png'
-import asistenciasIcon from './icons/icons-perfil/asistencias.png'
-import tarjetasIcon from './icons/icons-perfil/tarjetas.png'
-
 
 // Paleta e identidad tipográfica del mockup aprobado — valores exactos, no
 // tocar (ver conversación de rediseño de Perfil).
@@ -29,119 +25,200 @@ const COLORS = {
   kitRed: '#C41E2A',
   kitSand: '#faf7f2',
   kitGold: '#B8860B',
-  // Sectores del radar según el valor de la stat: apagado/grisáceo si es
-  // bajo, dorado con más brillo si supera el umbral.
-  kitGoldDim: '#b6b4b1',
-  kitGoldBright: '#eebc59'
 }
-
 
 const FONT_DISPLAY = "'Space Grotesk', sans-serif"
 const FONT_BODY = "'IBM Plex Sans', sans-serif"
 
-function StarRating({ value, max = 5 }) {
-  const filled = Math.round(value)
+// Los 4 atributos valorables, en el orden en que se pintan los 4 tramos del
+// marco del octógono (arriba-dcha, abajo-dcha, abajo-izda, arriba-izda).
+const ATTRS = [
+  { key: 'avgEsfuerzo', label: 'Esfuerzo' },
+  { key: 'avgEquipo', label: 'Equipo' },
+  { key: 'avgLiderazgo', label: 'Liderazgo' },
+  { key: 'avgImpacto', label: 'Impacto' },
+]
+
+// Octógono: path del marco y la máscara de la foto (mismos valores que el
+// mockup 3a). Cada tramo del marco es un trozo del perímetro (SEG_LEN) que
+// arranca en un SEG_OFFSET; el tramo "de valor" se rellena en proporción a
+// la nota del atributo (0..5).
+const OCT_D = 'M59 7 L95.8 22.2 L111 59 L95.8 95.8 L59 111 L22.2 95.8 L7 59 L22.2 22.2 Z'
+const OCT_CLIP =
+  'polygon(50% 0%, 85.36% 14.64%, 100% 50%, 85.36% 85.36%, 50% 100%, 14.64% 85.36%, 0% 50%, 14.64% 14.64%)'
+const SEG_LEN = 71.6
+const SEG_OFFSETS = [-4, -83.6, -163.2, -242.8]
+
+function attrColor(v) {
+  if (v == null || Number.isNaN(v)) return '#5f5347'
+  if (v >= 4) return '#eebc59'
+  if (v >= 3) return '#c9992f'
+  return '#5f5347'
+}
+
+// Notas de los 4 atributos (null si aún no hay valoraciones) y su media.
+function computeAttrs(stats) {
+  const attrVals = ATTRS.map((a) => {
+    const raw = stats?.[a.key]
+    return raw == null ? null : Number(raw)
+  })
+  const present = attrVals.filter((v) => v != null && !Number.isNaN(v))
+  const avg = present.length ? present.reduce((s, v) => s + v, 0) / present.length : null
+  return { attrVals, avg }
+}
+
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+function fmtFecha(iso) {
+  if (!iso) return null
+  const [, mo, d] = String(iso).slice(0, 10).split('-').map(Number)
+  if (!mo || !d) return String(iso).slice(0, 10)
+  return `${d} ${MESES[mo - 1]}`
+}
+
+// Notas con coma decimal: un decimal para notas sueltas (4,7), dos para la
+// media de cabecera (4,09), y siempre con signo para la diferencia (+0,64).
+const fmt1 = (n) => Number(n).toFixed(1).replace('.', ',')
+const fmt2 = (n) => Number(n).toFixed(2).replace('.', ',')
+const fmtSigned = (n) => (n >= 0 ? '+' : '') + fmt2(n)
+
+function evoBarColor(v) {
+  if (v >= 4) return '#eebc59'
+  if (v >= 3.4) return '#c9992f'
+  return '#2b2b2b'
+}
+
+// Barras = nota del jugador por jornada (color por tramo); línea = media del
+// equipo (siempre #C41E2A). Se pintan las últimas 10 jornadas con nota.
+function EvolutionChart({ rows }) {
+  const data = rows.slice(-10)
+  const W = 336
+  const BASE = 110
+  const TOP = 20
+  const BW = 22
+  const n = data.length
+  const slot = n > 1 ? (W - BW) / (n - 1) : 0
+  const x = (i) => (n > 1 ? i * slot : (W - BW) / 2)
+  const y = (v) => BASE - (Math.max(0, Math.min(5, v)) / 5) * (BASE - TOP)
+
+  const linePts = data
+    .map((d, i) => (d.teamRating != null ? `${x(i) + BW / 2},${y(d.teamRating)}` : null))
+    .filter(Boolean)
+    .join(' ')
+
   return (
-    <div className="profile-star-rating">
-      {Array.from({ length: max }).map((_, i) => (
-        <Star
-          key={i}
-          size={16}
-          color={i < filled ? COLORS.yolk : 'rgba(242,243,236,0.3)'}
-          fill={i < filled ? COLORS.yolk : 'rgba(242,243,236,0.3)'}
-        />
-      ))}
+    <div className="p3-evo">
+      <svg viewBox={`0 0 ${W} 132`} width="100%">
+        <line x1="0" y1={BASE} x2={W} y2={BASE} stroke="#1c1c1c" strokeWidth="1" />
+        {data.map((d, i) =>
+          d.rating != null ? (
+            <rect
+              key={`b${i}`}
+              x={x(i)}
+              y={y(d.rating)}
+              width={BW}
+              height={BASE - y(d.rating)}
+              rx="3"
+              fill={evoBarColor(d.rating)}
+            />
+          ) : null
+        )}
+        {linePts && (
+          <polyline points={linePts} fill="none" stroke="#C41E2A" strokeWidth="2" strokeLinejoin="round" />
+        )}
+        {data.map((d, i) =>
+          i === 0 || i === n - 1 || i % 3 === 0 ? (
+            <text
+              key={`t${i}`}
+              x={x(i) + BW / 2}
+              y="126"
+              textAnchor="middle"
+              style={{
+                fontFamily: FONT_BODY,
+                fontSize: 9,
+                fill: i === n - 1 ? '#eebc59' : 'rgba(242,243,236,.58)',
+              }}
+            >
+              J{d.matchday}
+            </text>
+          ) : null
+        )}
+      </svg>
+      <div className="p3-evo-legend">
+        <span>
+          <span className="p3-evo-swatch-bar" /> Su nota
+        </span>
+        <span>
+          <span className="p3-evo-swatch-line" /> Media del equipo
+        </span>
+      </div>
     </div>
   )
 }
 
-function polarPoint(cx, cy, angleDeg, radius) {
-  const rad = (angleDeg * Math.PI) / 180
-  return { x: cx + radius * Math.sin(rad), y: cy - radius * Math.cos(rad) }
-}
-
-function sectorPath(cx, cy, centerAngle, radius) {
-  const start = polarPoint(cx, cy, centerAngle - 45, radius)
-  const end = polarPoint(cx, cy, centerAngle + 45, radius)
-  return `M ${cx} ${cy} L ${start.x} ${start.y} A ${radius} ${radius} 0 0 1 ${end.x} ${end.y} Z`
-}
-
-function AttributeWheel({ data, max = 5, threshold = 2.5 }) {
-  const cx = 180
-  const cy = 160
-  const maxR = 66
-  const badgeOffset = 86
-  const badgeR = 14
-  const labelOffset = 114
-  const anchorFor = (angle) => {
-    if (angle === 90) return 'start'
-    if (angle === 270) return 'end'
-    return 'middle'
-  }
-
+// Foto del jugador enmarcada en un octógono cuyo borde se ilumina, lado a
+// lado, según la nota de cada atributo.
+function Octagon({ photo, name, attrVals }) {
   return (
-    <svg width="100%" viewBox="0 0 360 320" style={{ display: 'block' }}>
-      {Array.from({ length: max }, (_, i) => (i + 1) / max).map((f) => (
-        <circle key={f} cx={cx} cy={cy} r={maxR * f} fill="none" stroke="#3A3A3A" strokeWidth={1.5} />
-      ))}
-      {[45, 135, 225, 315].map((a) => {
-        const p = polarPoint(cx, cy, a, maxR)
-        return <line key={a} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#3A3A3A" strokeWidth={1.5} />
-      })}
-
-      {data.map((d, i) => {
-        const angle = i * 90
-        const radius = maxR * (d.value / max)
-        const gold = d.value >= threshold ? COLORS.kitGoldBright : COLORS.kitGoldDim
-        const badgePos = polarPoint(cx, cy, angle, badgeOffset)
-        const labelPos = polarPoint(cx, cy, angle, labelOffset)
-        const goldDark =
-          d.value >= 4 ? 'rgb(150, 130, 95)' :
-          d.value >= 2.5 ? 'rgb(120, 105, 78)' :
-          d.value >= 1 ? 'rgb(90, 78, 58)' :'rgb(60, 60, 60)'
-
-        return (
-          <g key={d.subject}>
+    <div className="p3-oct">
+      <svg width="118" height="118" viewBox="0 0 118 118">
+        {SEG_OFFSETS.map((off) => (
+          <path
+            key={`t${off}`}
+            d={OCT_D}
+            fill="none"
+            stroke="#232323"
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeDasharray={`${SEG_LEN} 400`}
+            strokeDashoffset={off}
+          />
+        ))}
+        {attrVals.map((v, i) => {
+          const dash = Math.max(0, Math.min(SEG_LEN, SEG_LEN * ((Number(v) || 0) / 5)))
+          return (
             <path
-              d={sectorPath(cx, cy, angle, radius)}
-              fill={gold}
-              fillOpacity={0.3}
-              stroke={gold}
-              strokeWidth={1.5}
+              key={`v${i}`}
+              d={OCT_D}
+              fill="none"
+              stroke={attrColor(v)}
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={`${dash} 400`}
+              strokeDashoffset={SEG_OFFSETS[i]}
             />
-            <circle
-              cx={badgePos.x}
-              cy={badgePos.y}
-              r={badgeR}
-              fill={
-                d.value >= 4 ? 'rgb(139, 106, 48)' :
-                d.value >= 2.5 ? 'rgb(119, 109, 90)' :
-                d.value >= 1 ? 'rgb(65, 58, 48)' :
-                'rgb(58, 57, 57)'
-              }
-              stroke={COLORS.kitInk}
-              strokeWidth={2}
-            />             
-            <text
-              x={badgePos.x}
-              y={badgePos.y + 4}
-              textAnchor="middle"
-              style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 12, fill: '#FFFFFF' }}
-            >
-              {d.value.toFixed(1)}
-            </text>
-            <text
-              x={labelPos.x}
-              y={labelPos.y + 4}
-              textAnchor={anchorFor(angle)}
-              style={{ fontFamily: FONT_BODY, fontSize: 11, fill: '#E5E5E5' }}
-            >
-              {d.subject}
-            </text>
-          </g>
-        )
-      })}
-    </svg>
+          )
+        })}
+      </svg>
+      <div className="p3-oct-photo" style={{ clipPath: OCT_CLIP }}>
+        {photo ? (
+          <img src={photo} alt={name} style={{ clipPath: OCT_CLIP }} />
+        ) : (
+          <span>{(name || '?').charAt(0)}</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function Stat({ num, label }) {
+  return (
+    <div className="p3-stat">
+      <p className="p3-stat-num">{num}</p>
+      <p className="p3-stat-label">{label}</p>
+    </div>
+  )
+}
+
+function Section({ title, meta, open, onToggle, children }) {
+  return (
+    <div className="p3-sec">
+      <button type="button" className="p3-sec-head" onClick={onToggle} aria-expanded={open}>
+        <span className="p3-sec-title">{title}</span>
+        {meta != null && <span className="p3-sec-meta">{meta}</span>}
+        <span className="p3-sec-chev">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && children}
+    </div>
   )
 }
 
@@ -221,94 +298,131 @@ const inputStyle = {
   boxSizing: 'border-box',
 }
 
-function StatBadge({ icon, value, label }) {
-  return (
-    <div className="profile-statbadge">
-      <div className="profile-statbadge-icon" style={{ backgroundColor: COLORS.line }}>
-        {icon}
-      </div>
-      <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 19, color: '#FFFFFF' }}>{value}</span>
-      <span style={{ fontSize: 10.5, color: COLORS.paper, marginTop: 2, textAlign: 'center' }}>{label}</span>
-    </div>
-  )
-}
+// Letra y clase de color del badge de resultado (§4: victoria dorado, empate
+// rojo, derrota gris — mismos colores que las clases .p3-res-G/E/P ya en CSS).
+const RES_LETTER = { W: 'G', D: 'E', L: 'P' }
 
-function SeasonStatsRow({ stats }) {
-  return (
-    <div className="profile-season-stats" style={{ border: `1px solid ${COLORS.line}` }}>
-      <div className="profile-season-stats-row">
-        <StatBadge
-          icon={<img src={partidosIcon} alt="" className="profile-statbadge-img" />}
-          value={stats.matchesPlayed ?? 0}
-          label="Partidos"
-        />
-        <StatBadge
-          icon={<img src={golesIcon} alt="" className="profile-statbadge-img" />}
-          value={stats.goals ?? 0}
-          label="Goles"
-        />
-        <StatBadge
-          icon={<img src={asistenciasIcon} alt="" className="profile-statbadge-img" />}
-          value={stats.assists ?? 0}
-          label="Asistencias"
-        />
-        <StatBadge
-          icon={<img src={tarjetasIcon} alt="" className="profile-statbadge-img" />}
-          value={`${stats.yellowCards ?? 0}/${stats.redCards ?? 0}`}
-          label="Tarjetas"
-        />
-      </div>
-    </div>
-  )
-}
-
+// Pestaña "Estadísticas" — mockup 3a: cuerpo en secciones plegables. Todos
+// los datos son reales; "Evolución por jornada" y "Últimos partidos" vienen
+// de stats.evolution / stats.lastMatches (endpoint ratings-history). Si un
+// array llega vacío, su sección no se pinta.
 function EstadisticasTab({ stats }) {
-  const radarData = [
-    { subject: 'Esfuerzo', value: stats.avgEsfuerzo ?? 0 },
-    { subject: 'Equipo', value: stats.avgEquipo ?? 0 },
-    { subject: 'Liderazgo', value: stats.avgLiderazgo ?? 0 },
-    { subject: 'Impacto', value: stats.avgImpacto ?? 0 },
-  ]
-  const media = radarData.reduce((sum, d) => sum + d.value, 0) / radarData.length
+  const [openEvo, setOpenEvo] = useState(true)
+  const [openAttr, setOpenAttr] = useState(true)
+  const [openMatches, setOpenMatches] = useState(true)
+
+  const { attrVals } = computeAttrs(stats)
+  const tarj = `${stats.yellowCards ?? 0}/${stats.redCards ?? 0}`
+  const evolution = Array.isArray(stats.evolution) ? stats.evolution : []
+  const lastMatches = Array.isArray(stats.lastMatches) ? stats.lastMatches : []
 
   return (
-    <>
-      <SeasonStatsRow stats={stats} />
-
-      <div className="profile-wheel-card" style={{ backgroundColor: COLORS.kitInk }}>
-        <div className="profile-wheel-header">
-          <span style={{ fontSize: 12, color: 'rgba(242,243,236,0.65)' }}>Valoración media</span>
-          <StarRating value={media} />
-        </div>
-        <AttributeWheel data={radarData} />
+    <div className="p3-body">
+      <div className="p3-statgrid">
+        <Stat num={stats.matchesPlayed ?? 0} label="Part." />
+        <Stat num={stats.goals ?? 0} label="Goles" />
+        <Stat num={stats.assists ?? 0} label="Asist." />
+        <Stat num={tarj} label="Tarj." />
       </div>
 
-      <div className="profile-attendance">
-        <div className="profile-attendance-header">
-          <span style={{ fontSize: 13, color: COLORS.yolk }}>Asistencia a convocatorias</span>
-          <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 18, color: COLORS.yolk }}>
-            {stats.attendancePct !== null ? `${stats.attendancePct}%` : '—'}
+      <div className="p3-conv">
+        <div className="p3-conv-head">
+          <span className="p3-conv-label">Convocatorias</span>
+          <span className="p3-conv-pct">
+            {stats.attendancePct != null ? `${stats.attendancePct}%` : '—'}
           </span>
         </div>
-        <div className="profile-progress-track" style={{ height: 8, backgroundColor: COLORS.line }}>
-          <div
-            className="profile-progress-fill"
-            style={{ width: `${stats.attendancePct ?? 0}%`, backgroundColor: COLORS.yolk }}
-          />
+        <div className="p3-track">
+          <div className="p3-fill" style={{ width: `${stats.attendancePct ?? 0}%` }} />
         </div>
       </div>
 
-      <div>
-        <Row
-          label="MVPs recibidos"
-          value={stats.mvpsRecibidos}
-          accent
-          last
-          labelColor={COLORS.yolk}
-          icon={<Star size={14} color={COLORS.yolk} fill={COLORS.yolk} />}
-        />
+      <div className="p3-mvp">
+        <Star size={13} color="#eebc59" fill="#eebc59" />
+        <span className="p3-mvp-label">MVP recibidos</span>
+        <span className="p3-mvp-val">{stats.mvpsRecibidos ?? 0}</span>
       </div>
-    </>
+
+      {evolution.length > 0 && (
+        <Section
+          title="Evolución por jornada"
+          meta="últimas 10"
+          open={openEvo}
+          onToggle={() => setOpenEvo((v) => !v)}
+        >
+          <div className="p3-sec-body">
+            <EvolutionChart rows={evolution} />
+          </div>
+        </Section>
+      )}
+
+      <Section title="Atributos" open={openAttr} onToggle={() => setOpenAttr((v) => !v)}>
+        <div className="p3-sec-body p3-attrs">
+          {ATTRS.map((a, i) => {
+            const v = attrVals[i]
+            return (
+              <div className="p3-attr-row" key={a.key}>
+                <span className="p3-attr-label">{a.label}</span>
+                <span className="p3-attr-track">
+                  <span
+                    className="p3-attr-fill"
+                    style={{ width: `${((Number(v) || 0) / 5) * 100}%`, background: attrColor(v) }}
+                  />
+                </span>
+                <span className="p3-attr-val">{v != null ? fmt1(v) : '—'}</span>
+              </div>
+            )
+          })}
+        </div>
+      </Section>
+
+      {lastMatches.length > 0 && (
+        <Section
+          title="Últimos partidos"
+          meta={lastMatches.length}
+          open={openMatches}
+          onToggle={() => setOpenMatches((v) => !v)}
+        >
+          <div className="p3-sec-body">
+            {lastMatches.map((m, idx) => {
+              const parts = []
+              if (m.goals) parts.push(`${m.goals} G`)
+              if (m.assists) parts.push(`${m.assists} A`)
+              if (m.redCards) parts.push('roja')
+              else if (m.yellowCards) parts.push('amarilla')
+              if (m.mvp) parts.push('MVP')
+              const meta = [`J${m.matchday ?? '—'}`, fmtFecha(m.date), ...parts]
+                .filter(Boolean)
+                .join(' · ')
+              return (
+                <div className="p3-match" key={`${m.matchday}-${m.date}-${idx}`}>
+                  <span className={`p3-match-badge p3-res-${RES_LETTER[m.result] || 'E'}`}>
+                    {RES_LETTER[m.result] || 'E'}
+                  </span>
+                  <div className="p3-match-main">
+                    <p className="p3-match-title">
+                      {m.opponent || '—'}{' '}
+                      <span>
+                        {m.goalsFor}-{m.goalsAgainst}
+                      </span>
+                    </p>
+                    <p className="p3-match-meta">{meta}</p>
+                  </div>
+                  {m.rating != null && (
+                    <span
+                      className="p3-match-rating"
+                      style={{ color: m.rating >= 4.5 ? '#eebc59' : '#faf7f2' }}
+                    >
+                      {fmt1(m.rating)}
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </Section>
+      )}
+    </div>
   )
 }
 
@@ -536,8 +650,27 @@ export default function PlayerProfileScreen({ player, onBack, currentUser }) {
   function cargarPerfil() {
     setLoading(true)
     setError('')
-    return fetchPlayerProfile(player.id)
-      .then(setProfile)
+    return Promise.all([
+      fetchPlayerProfile(player.id),
+      // El histórico de notas es opcional: si falla, el perfil se pinta igual
+      // y las secciones que dependen de él simplemente no aparecen.
+      fetchRatingsHistory(player.id).catch(() => ({ evolution: [], lastMatches: [] })),
+    ])
+      .then(([prof, hist]) => {
+        const evolution = Array.isArray(hist?.evolution) ? hist.evolution : []
+        const lastMatches = Array.isArray(hist?.lastMatches) ? hist.lastMatches : []
+        // Diferencia vs la media del equipo: media de sus notas por jornada
+        // menos la media de las notas del equipo en esas mismas jornadas.
+        const pRows = evolution.filter((e) => e.rating != null)
+        const tRows = evolution.filter((e) => e.teamRating != null)
+        const pAvg = pRows.length ? pRows.reduce((s, e) => s + e.rating, 0) / pRows.length : null
+        const tAvg = tRows.length ? tRows.reduce((s, e) => s + e.teamRating, 0) / tRows.length : null
+        const ratingDelta = pAvg != null && tAvg != null ? pAvg - tAvg : null
+        setProfile({
+          ...prof,
+          stats: { ...prof.stats, evolution, lastMatches, teamAvgRating: tAvg, ratingDelta },
+        })
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }
@@ -553,6 +686,8 @@ export default function PlayerProfileScreen({ player, onBack, currentUser }) {
       .then(setPositions)
       .catch(() => {})
   }, [isOwnProfile])
+
+  const { attrVals, avg } = computeAttrs(profile?.stats)
 
   return (
     <div className="stats">
@@ -571,26 +706,22 @@ export default function PlayerProfileScreen({ player, onBack, currentUser }) {
             className="profile-hero"
             style={{ backgroundColor: COLORS.kitInk, borderBottom: `3px solid ${COLORS.kitRed}` }}
           >
-            <div className="profile-header-row">
-              <div
-                className="profile-avatar-circle"
-                style={{ width: 52, height: 52, backgroundColor: COLORS.kitRed, border: `2px solid ${COLORS.kitGold}` }}
-              >
-                {profile.photo ? (
-                  <img src={profile.photo} alt="Foto de perfil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 20, color: '#FFFFFF' }}>
-                    {profile.name.charAt(0)}
-                  </span>
+            <div className="p3-hero-row">
+              <Octagon photo={profile.photo} name={profile.name} attrVals={attrVals} />
+              <div className="p3-hero-info">
+                <p className="p3-name">{profile.name}</p>
+                <p className="p3-sub">
+                  {profile.positionLabel || 'Sin posición'}
+                  {player?.number != null ? ` · Dorsal ${player.number}` : ''}
+                </p>
+                {avg != null && (
+                  <div className="p3-avg-row">
+                    <span className="p3-avg">{fmt2(avg)}</span>
+                    {profile.stats?.ratingDelta != null && (
+                      <span className="p3-avg-delta">{fmtSigned(profile.stats.ratingDelta)} vs equipo</span>
+                    )}
+                  </div>
                 )}
-              </div>
-              <div>
-                <p style={{ fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 17, color: COLORS.kitSand }}>
-                  {profile.name}
-                </p>
-                <p style={{ fontSize: 13, color: 'rgba(216,195,154,0.7)' }}>
-                  Huevos FC · {profile.positionLabel || 'Sin posición'}
-                </p>
               </div>
             </div>
 
@@ -617,5 +748,3 @@ export default function PlayerProfileScreen({ player, onBack, currentUser }) {
     </div>
   )
 }
-
-AttributeWheel

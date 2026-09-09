@@ -509,35 +509,6 @@ select {
   text-transform: uppercase;
   letter-spacing: 1px;
 }
-/* Máximos goleadores agrupados en una sola tarjeta en vez de líneas sueltas
-   (antes .feed/.feed-row, que sigue existiendo para MarcadorScreen). */
-.scorers-card {
-  background: var(--surface-1);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-.scorer-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-}
-.scorer-row:not(:last-child) {
-  border-bottom: 1px solid var(--border);
-}
-.scorer-row .avatar {
-  background: var(--surface-2);
-  color: var(--gold);
-}
-.scorer-name {
-  flex: 1;
-  font-size: 14px;
-  color: var(--text-primary);
-}
-.scorer-goals {
-  font-size: 13px;
-  color: var(--text-secondary);
-}
 
 .call-list {
   display: flex;
@@ -1773,12 +1744,12 @@ select {
    jornadas ya jugadas lo sustituyen por el color de su resultado (reglas
    -victoria/-derrota/-empate de abajo, que van después en cascada). */
 .historial-jornada-card {
-  border: 1px solid var(--gold);
+  /*border: 1px solid var(--gold);*/
   border-radius: var(--radius);
   background: black;
   padding: 18px;
   cursor: pointer;
-  box-shadow: 0 0 0 1px #c7a430, 0 0 16px -4px #7c6e09;
+  /*box-shadow: 0 0 0 1px #c7a430, 0 0 16px -4px #7c6e09;*/
 }
 .historial-jornada-card:hover {
   border-color: var(--accent);
@@ -1794,7 +1765,27 @@ select {
    comparten estructura (borde 1px + glow difuminado de 16px), solo cambia
    el color, para que se vean consistentes entre sí. La opacity de
    .historial-jornada-card-jugada de arriba atenúa también este halo. */
-.historial-jornada-card-victoria {
+
+
+
+.historial-jornada-card { position: relative; }
+.historial-jornada-card::before {
+  content: ''; position: absolute; top: -1px; left: 50%;
+  transform: translateX(-50%);
+  width: 50px; height: 2px; border-radius: 2px;
+}
+.historial-jornada-card-victoria::before {
+  background: #00ff43; box-shadow: 0 0 12px -1px rgba(47,168,79,.85);
+}
+.historial-jornada-card-derrota::before {
+  background: #e23983; box-shadow: 0 0 12px -1px rgba(226,57,131,.85);
+
+}
+.historial-jornada-card-empate::before {
+  background: #d9e8ff; box-shadow: 0 0 12px -1px rgba(74,77,82,.85);
+}
+
+/* .historial-jornada-card-victoria {
   border-color: #2fa84f;
   box-shadow: 0 0 0 1px #2fa84f, 0 0 16px -4px #2fa84f;
 }
@@ -1805,7 +1796,7 @@ select {
 .historial-jornada-card-empate {
   border-color: #4a4d52;
   box-shadow: 0 0 0 1px #4a4d52, 0 0 16px -4px rgba(74, 77, 82, 0.4);
-}
+} */
 .historial-jornada-header {
   display: flex;
   align-items: center;
@@ -1999,7 +1990,7 @@ input:focus, select:focus { outline: 2px solid var(--gold); outline-offset: 1px;
 }
 .profile-body {
   padding: 18px 16px 4px;
-  background-color: #0b0202;
+  background-color: #0a0a0a;
   color: white;
 
 }
@@ -2035,66 +2026,6 @@ input:focus, select:focus { outline: 2px solid var(--gold); outline-offset: 1px;
   flex: 1 1 0%;
   border-radius: 9999px;
 }
-.profile-wheel-card {
-  border-radius: 16px;
-  margin-bottom: 20px;
-  padding: 16px 8px 4px;
-}
-.profile-wheel-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 0 12px;
-  margin-bottom: 4px;
-}
-.profile-attendance {
-  margin-bottom: 20px;
-}
-.profile-attendance-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-.profile-progress-track {
-  width: 100%;
-  border-radius: 9999px;
-  overflow: hidden;
-}
-.profile-progress-fill {
-  height: 100%;
-  border-radius: 9999px;
-}
-.profile-season-stats {
-  border-radius: 16px;
-  margin-bottom: 20px;
-  padding: 16px;
-  background-color: rgb(10 10 10)
-}
-.profile-season-stats-row {
-  display: flex;
-}
-.profile-statbadge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-}
-.profile-statbadge-img {
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
-  display: block;
-}
-.profile-statbadge-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
-}
 .profile-stat-row {
   display: flex;
   align-items: center;
@@ -2105,11 +2036,6 @@ input:focus, select:focus { outline: 2px solid var(--gold); outline-offset: 1px;
   display: flex;
   align-items: center;
   gap: 4px;
-}
-.profile-star-rating {
-  display: flex;
-  align-items: center;
-  gap: 2px;
 }
 .profile-field {
   margin-bottom: 16px;
@@ -2487,10 +2413,6 @@ button.al-card {
   gap: 10px;
 }
 
-.historial-jornada-card-empate {
-    border-color: #4a4d52;
-    box-shadow: 0 0 0 1px #1e649c, 0 0 16px -4px rgba(12, 86, 214, 0.4);
-}
 
 
 /* ===================================================================
@@ -3097,3 +3019,322 @@ button.al-card {
   line-height: 1.5;
   color: #8c8783;
 }
+
+/* ===================================================================
+   PlayerProfileScreen · pestaña Estadísticas (mockup 3a de Claude Design):
+   foto en octógono con marco de 4 tramos + cuerpo en secciones plegables.
+   El shell (.profile-card / .profile-hero / .profile-body) ya es oscuro.
+   =================================================================== */
+.p3-hero-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.p3-oct {
+  position: relative;
+  width: 118px;
+  height: 118px;
+  flex: none;
+}
+.p3-oct svg {
+  display: block;
+  position: absolute;
+  inset: 0;
+}
+.p3-oct-photo {
+  position: absolute;
+  left: 24px;
+  top: 24px;
+  width: 70px;
+  height: 70px;
+  background: #161616;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.p3-oct-photo img {
+  width: 70px;
+  height: 70px;
+  object-fit: cover;
+  display: block;
+}
+.p3-oct-photo span {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  color: #faf7f2;
+}
+.p3-hero-info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.p3-name {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.08;
+  color: #faf7f2;
+  letter-spacing: -0.015em;
+}
+.p3-sub {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(216, 195, 154, 0.7);
+}
+.p3-avg-row {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin-top: 3px;
+}
+.p3-avg {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1;
+  color: #eebc59;
+}
+.p3-avg-delta {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4c9a6a;
+}
+
+.p3-body {
+  display: flex;
+  flex-direction: column;
+}
+.p3-statgrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 16px 0;
+  border-bottom: 1px solid #1c1c1c;
+}
+.p3-stat-num {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1;
+  color: #faf7f2;
+}
+.p3-stat-label {
+  margin: 4px 0 0;
+  font-size: 9.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(242, 243, 236, 0.72);
+}
+
+.p3-conv {
+  padding: 16px 0;
+  border-bottom: 1px solid #1c1c1c;
+}
+.p3-conv-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+.p3-conv-label {
+  font-size: 12.5px;
+  color: rgba(242, 243, 236, 0.85);
+}
+.p3-conv-pct {
+  margin-left: auto;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  color: #eebc59;
+}
+.p3-track {
+  height: 6px;
+  border-radius: 3px;
+  background: #1c1c1c;
+  overflow: hidden;
+}
+.p3-fill {
+  height: 100%;
+  background: #eebc59;
+}
+
+.p3-mvp {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0;
+  border-bottom: 1px solid #1c1c1c;
+}
+.p3-mvp-label {
+  font-size: 12.5px;
+  color: rgba(242, 243, 236, 0.85);
+}
+.p3-mvp-val {
+  margin-left: auto;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  color: #eebc59;
+}
+
+.p3-sec {
+  border-bottom: 1px solid #1c1c1c;
+}
+.p3-sec-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 0 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.p3-sec-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: #faf7f2;
+}
+.p3-sec-meta {
+  font-size: 10.5px;
+  color: rgba(242, 243, 236, 0.6);
+}
+.p3-sec-chev {
+  margin-left: auto;
+  font-size: 10px;
+  color: rgba(242, 243, 236, 0.5);
+}
+.p3-sec-body {
+  padding-bottom: 16px;
+}
+.p3-empty {
+  margin: 0;
+  font-size: 11px;
+  font-style: italic;
+  color: rgba(242, 243, 236, 0.55);
+}
+
+.p3-attrs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.p3-attr-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.p3-attr-label {
+  width: 74px;
+  flex: none;
+  font-size: 11.5px;
+  color: rgba(242, 243, 236, 0.7);
+}
+.p3-attr-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #1c1c1c;
+  overflow: hidden;
+}
+.p3-attr-fill {
+  display: block;
+  height: 100%;
+}
+.p3-attr-val {
+  width: 26px;
+  text-align: right;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 12.5px;
+  color: #faf7f2;
+}
+
+.p3-match {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #1c1c1c;
+}
+.p3-match:first-child {
+  border-top: none;
+}
+.p3-match-badge {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 10.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.p3-res-G { background: #eebc59; color: #0a0a0a; }
+.p3-res-E { background: #c41e2a; color: #fff; }
+.p3-res-P { background: #8f8f8f; color: #0a0a0a; }
+.p3-match-main {
+  flex: 1;
+  min-width: 0;
+}
+.p3-match-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #faf7f2;
+}
+.p3-match-title span {
+  color: rgba(242, 243, 236, 0.72);
+  font-weight: 400;
+}
+.p3-match-meta {
+  margin: 3px 0 0;
+  font-size: 10.5px;
+  color: rgba(242, 243, 236, 0.72);
+}
+.p3-match-rating {
+  flex: none;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+/* Evolución por jornada: gráfico de barras (su nota) + línea (media equipo). */
+.p3-evo svg {
+  display: block;
+  width: 100%;
+}
+.p3-evo-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 6px;
+}
+.p3-evo-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: rgba(242, 243, 236, 0.7);
+}
+.p3-evo-swatch-bar {
+  width: 11px;
+  height: 6px;
+  border-radius: 2px;
+  background: #eebc59;
+}
+.p3-evo-swatch-line {
+  width: 11px;
+  height: 2px;
+  background: #c41e2a;
+}
+
+

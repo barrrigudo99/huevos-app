@@ -3,6 +3,7 @@ import {
   fetchCalendario,
   fetchClub,
   fetchEstadisticasPersonales,
+  fetchRanking,
   fetchAsistentesConvocatoria,
   markMatchAsPlayed,
   unmarkMatchAsPlayed,
@@ -13,7 +14,7 @@ import MatchResultPanel from './MatchResultPanel'
 import HistorialJornadas from './HistorialJornadas'
 import BottomSheet from './BottomSheet'
 import AlineacionScreen from './AlineacionScreen'
-import PlayerAvatar from './PlayerAvatar'
+import TeamRankingCard from './TeamRankingCard'
 
 export default function StatsScreen({
   players,
@@ -32,6 +33,7 @@ export default function StatsScreen({
   const [calendario, setCalendario] = useState(null)
   const [clubName, setClubName] = useState('')
   const [estadisticasPersonales, setEstadisticasPersonales] = useState([])
+  const [ranking, setRanking] = useState([])
   const [selectedMatch, setSelectedMatch] = useState(null)
   // Partido para el que se abre el panel de anotar estadísticas
   // individuales (MatchResultPanel/MatchStatsPanel), justo después de
@@ -48,11 +50,19 @@ export default function StatsScreen({
   // se pueden leer con cualquier rol (solo sus PUT/POST están restringidos
   // en el servidor), así que se cargan para todos los usuarios.
   useEffect(() => {
-    Promise.all([fetchCalendario(), fetchClub(), fetchEstadisticasPersonales()])
-      .then(([cal, club, estadisticas]) => {
+    Promise.all([
+      fetchCalendario(),
+      fetchClub(),
+      fetchEstadisticasPersonales(),
+      // Si el ranking falla, se queda vacío (TeamRankingCard pinta su propio
+      // estado vacío) y no bloquea el resto de la pantalla.
+      fetchRanking().catch(() => []),
+    ])
+      .then(([cal, club, estadisticas, rankingRows]) => {
         setCalendario(cal)
         setClubName(club?.name || '')
         setEstadisticasPersonales(estadisticas)
+        setRanking(rankingRows)
       })
       .catch((err) => setMatchesError(err.message))
       .finally(() => setLoadingMatches(false))
@@ -154,11 +164,6 @@ export default function StatsScreen({
     0
   )
 
-  const scorers = players
-    .map((p) => ({ ...p, goals: statsFor(p.id).goles || 0 }))
-    .filter((p) => p.goals > 0)
-    .sort((a, b) => b.goals - a.goals)
-
   // HistorialJornadas solo debe listar los partidos ya jugados más el
   // próximo por jugar (el no jugado más cercano por fecha) — el resto de
   // jornadas futuras del calendario no se muestran.
@@ -226,22 +231,7 @@ export default function StatsScreen({
         </div>
 
         <div>
-          <p className="stats-section-title">Máximos goleadores</p>
-          {scorers.length === 0 ? (
-            <p className="empty">Todavía no hay goles registrados.</p>
-          ) : (
-            <div className="scorers-card">
-              {scorers.map((p) => (
-                <div className="scorer-row" key={p.id}>
-                  <PlayerAvatar player={p} size="sm" />
-                  <span className="scorer-name">{p.name}</span>
-                  <span className="scorer-goals">
-                    {p.goals} {p.goals === 1 ? 'gol' : 'goles'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          <TeamRankingCard rows={ranking} />
         </div>
 
         <div>
