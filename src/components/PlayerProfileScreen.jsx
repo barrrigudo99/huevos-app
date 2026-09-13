@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronLeft, Camera, Star } from 'lucide-react'
+import { ChevronLeft, Camera, Star, X } from 'lucide-react'
 import {
   fetchPlayerProfile,
   fetchPositions,
@@ -157,7 +157,7 @@ function EvolutionChart({ rows }) {
 
 // Foto del jugador enmarcada en un octógono cuyo borde se ilumina, lado a
 // lado, según la nota de cada atributo.
-function Octagon({ photo, name, attrVals }) {
+function Octagon({ photo, name, attrVals, onPhotoClick }) {
   return (
     <div className="p3-oct">
       <svg width="118" height="118" viewBox="0 0 118 118">
@@ -189,13 +189,38 @@ function Octagon({ photo, name, attrVals }) {
           )
         })}
       </svg>
-      <div className="p3-oct-photo" style={{ clipPath: OCT_CLIP }}>
+      <div
+        className="p3-oct-photo"
+        style={{ clipPath: OCT_CLIP, cursor: photo ? 'pointer' : 'default' }}
+        onClick={photo ? onPhotoClick : undefined}
+        role={photo ? 'button' : undefined}
+        tabIndex={photo ? 0 : undefined}
+        aria-label={photo ? `Ver foto de ${name}` : undefined}
+      >
         {photo ? (
           <img src={photo} alt={name} style={{ clipPath: OCT_CLIP }} />
         ) : (
           <span>{(name || '?').charAt(0)}</span>
         )}
       </div>
+    </div>
+  )
+}
+
+// Foto a pantalla completa al pinchar en el octógono, como en la mayoría de
+// apps. Se cierra tocando fuera de la imagen o con el botón de cerrar.
+function PhotoLightbox({ photo, name, onClose }) {
+  return (
+    <div className="p3-photo-overlay" onClick={onClose}>
+      <button type="button" className="p3-photo-close" onClick={onClose} aria-label="Cerrar">
+        <X size={20} />
+      </button>
+      <img
+        src={photo}
+        alt={name}
+        className="p3-photo-full"
+        onClick={(e) => e.stopPropagation()}
+      />
     </div>
   )
 }
@@ -222,7 +247,7 @@ function Section({ title, meta, open, onToggle, children }) {
   )
 }
 
-function Row({ label, value, accent, icon, last, labelColor = COLORS.ink }) {
+function Row({ label, value, accent, icon, last, labelColor = COLORS.red }) {
   return (
     <div className="profile-stat-row" style={{ borderBottom: last ? 'none' : `1px solid ${COLORS.line}` }}>
       <span style={{ fontSize: 14, color: labelColor, fontFamily: FONT_BODY }}>{label}</span>
@@ -232,7 +257,7 @@ function Row({ label, value, accent, icon, last, labelColor = COLORS.ink }) {
           fontFamily: FONT_DISPLAY,
           fontWeight: 700,
           fontSize: 15,
-          color: accent ? COLORS.yolk : COLORS.ink,
+          color: accent ? COLORS.kitGold : COLORS.kitRed,
         }}
       >
         {icon}
@@ -644,6 +669,7 @@ export default function PlayerProfileScreen({ player, onBack, currentUser }) {
   const [positions, setPositions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [photoOpen, setPhotoOpen] = useState(false)
 
   const isOwnProfile = Boolean(currentUser?.player_id) && currentUser.player_id === player.id
 
@@ -701,13 +727,19 @@ export default function PlayerProfileScreen({ player, onBack, currentUser }) {
       {!loading && error && <p className="auth-error">{error}</p>}
 
       {!loading && !error && profile && (
+        <>
         <div className="profile-card" style={{ fontFamily: FONT_BODY }}>
           <div
             className="profile-hero"
             style={{ backgroundColor: COLORS.kitInk, borderBottom: `3px solid ${COLORS.kitRed}` }}
           >
             <div className="p3-hero-row">
-              <Octagon photo={profile.photo} name={profile.name} attrVals={attrVals} />
+              <Octagon
+                photo={profile.photo}
+                name={profile.name}
+                attrVals={attrVals}
+                onPhotoClick={() => setPhotoOpen(true)}
+              />
               <div className="p3-hero-info">
                 <p className="p3-name">{profile.name}</p>
                 <p className="p3-sub">
@@ -718,7 +750,9 @@ export default function PlayerProfileScreen({ player, onBack, currentUser }) {
                   <div className="p3-avg-row">
                     <span className="p3-avg">{fmt2(avg)}</span>
                     {profile.stats?.ratingDelta != null && (
-                      <span className="p3-avg-delta">{fmtSigned(profile.stats.ratingDelta)} vs equipo</span>
+                      <span className={`p3-avg-delta ${profile.stats.ratingDelta < 0 ? 'negative' : ''}`}>
+                        {fmtSigned(profile.stats.ratingDelta)} vs equipo
+                      </span>
                     )}
                   </div>
                 )}
@@ -744,6 +778,10 @@ export default function PlayerProfileScreen({ player, onBack, currentUser }) {
             )}
           </div>
         </div>
+        {photoOpen && profile.photo && (
+          <PhotoLightbox photo={profile.photo} name={profile.name} onClose={() => setPhotoOpen(false)} />
+        )}
+        </>
       )}
     </div>
   )

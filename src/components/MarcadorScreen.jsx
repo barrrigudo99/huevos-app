@@ -113,7 +113,7 @@ export default function MarcadorScreen() {
           )}
           <div className="mk-head-titles">
             <span className="mk-head-eyebrow">{eyebrow}</span>
-            <span className="mk-head-title">{title}</span>
+            {/* <span className="mk-head-title">{title}</span> */}
           </div>
         </div>
       </div>
