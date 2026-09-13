@@ -91,7 +91,7 @@ export default function MarcadorScreen() {
       : view === 'match'
         ? `Jornada ${selectedMatch.jornada}`
         : `Liga ${league.temporada} · Jornada ${league.jornadas_simuladas}/${league.total_jornadas}`
-  const title = view === 'team' ? teamName : view === 'match' ? 'Detalle del partido' : ''
+  const title = view === 'team' ? teamName : view === 'match' ? 'Detalle del partido' : 'clas'
 
   const goBack = () => (selectedMatch ? setSelectedMatch(null) : setSelectedTeam(null))
 
