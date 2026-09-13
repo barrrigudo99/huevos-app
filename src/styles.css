@@ -23,6 +23,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--surface-0);
   color: var(--text-primary);
+  overscroll-behavior: none;
 }
 
 .app {
@@ -73,13 +74,14 @@ body {
   flex: 1;
   padding: 8px 16px 16px;
   overflow-y: auto;
+  overscroll-behavior: none;
 }
 
 .bottom-nav {
   display: flex;
   justify-content: space-around;
   border-top: 1px solid var(--border);
-  padding: 6px 0;
+  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
   background: var(--surface-1);
 }
 .nav-btn {
@@ -91,11 +93,22 @@ body {
   border: none;
   font-size: 11px;
   color: var(--text-muted);
+  font-weight: 600;
   padding: 4px 10px;
   cursor: pointer;
+  position: relative;
 }
 .nav-btn.active {
   color: var(--accent);
+}
+.nav-btn.active::before {
+  content: '';
+  width: 22px;
+  height: 2px;
+  background: var(--accent);
+  position: absolute;
+  top: -8px;
+  border-radius: 2px;
 }
 .nav-icon-img {
   width: 20px;
@@ -1894,11 +1907,6 @@ body { background: var(--surface-0); }
 .app { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
 .app-header { padding-top: 18px; border-bottom: 1px solid rgba(214,179,106,.18); }
 .app-team { color: var(--gold); font-size: 11px; }
-.bottom-nav { background: var(--surface-1); border-top-color: var(--border); padding: 8px 0 max(8px, env(safe-area-inset-bottom)); }
-.nav-btn { color: var(--text-muted); font-weight: 600; }
-.nav-btn.active { color: var(--accent); }
-.nav-btn.active::before { content: ''; width: 22px; height: 2px; background: var(--accent); position: absolute; top: -8px; border-radius: 2px; }
-.nav-btn { position: relative; }
 .card, .metric, .scoreboard, .stats-panel-row { box-shadow: 0 8px 24px rgba(0,0,0,.14); }
 input, select { background: var(--surface-1); color: var(--text-primary); }
 input::placeholder { color: var(--text-muted); }
@@ -1997,7 +2005,6 @@ input:focus, select:focus { outline: 2px solid var(--gold); outline-offset: 1px;
 .profile-body label {
   color: #ffffff !important;
   padding: 18px 16px 4px;
-  background-color: #0b0202;
 }
 .profile-header-row {
   display: flex;
@@ -2052,6 +2059,7 @@ input:focus, select:focus { outline: 2px solid var(--gold); outline-offset: 1px;
   display: flex;
   align-items: center;
   gap: 8px;
+  border: 1px solid rgb(255 255 255);
 }
 .profile-save-btn {
   width: 100%;
@@ -3336,5 +3344,4 @@ button.al-card {
   height: 2px;
   background: #c41e2a;
 }
-
 

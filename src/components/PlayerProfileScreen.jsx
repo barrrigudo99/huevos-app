@@ -524,10 +524,10 @@ function InformacionTabEditable({ playerId, currentUserId, initial, positions, o
             className="profile-photo-btn"
             style={{
               fontSize: 13,
-              color: COLORS.ink,
-              border: `1px solid ${COLORS.line}`,
+              color: COLORS.red,
+              border: `2px solid ${COLORS.red}`,
               borderRadius: 10,
-              padding: '8px 14px',
+              padding: '9px 14px',
               cursor: 'pointer',
             }}
           >
@@ -748,3 +748,4 @@ export default function PlayerProfileScreen({ player, onBack, currentUser }) {
     </div>
   )
 }
+
