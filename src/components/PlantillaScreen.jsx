@@ -81,6 +81,10 @@ export default function PlantillaScreen({
   // pintarlo en NextMatchCard cuando el partido ya está jugado — misma
   // fuente que ya usa StatsScreen, sin duplicar la query en el backend.
   const [estadisticasPersonales, setEstadisticasPersonales] = useState([])
+  // Distingue "todavía no ha llegado la respuesta" de "llegó y no hay
+  // resultado": evita pintar un 0-0 de mentira en NextMatchCard mientras
+  // fetchEstadisticasPersonales sigue en vuelo.
+  const [estadisticasLoaded, setEstadisticasLoaded] = useState(false)
   // Convocatoria de la lista de jugadores de abajo: siempre la del partido
   // que se está mostrando en NextMatchCard (partidoMostrado), nunca una
   // fecha elegida aparte — así las dos nunca pueden desincronizarse.
@@ -99,6 +103,7 @@ export default function PlantillaScreen({
     fetchEstadisticasPersonales()
       .then(setEstadisticasPersonales)
       .catch(() => {})
+      .finally(() => setEstadisticasLoaded(true))
   }, [])
 
   useEffect(() => {
@@ -340,6 +345,7 @@ export default function PlantillaScreen({
         onNextMatch={handleNextMatch}
         hasPrevMatch={hasPrevMatch}
         hasNextMatch={hasNextMatch}
+        resultadoLoading={!estadisticasLoaded}
       />
 
       {showLineupPanel && (
@@ -352,6 +358,8 @@ export default function PlantillaScreen({
             jugado={!!partidoMostrado?.jugado}
             jornada={partidoMostrado?.jornada}
             rival={partidoMostrado?.rival}
+            estadisticasPersonales={estadisticasPersonales}
+            estadisticasLoaded={estadisticasLoaded}
           />
         </BottomSheet>
       )}

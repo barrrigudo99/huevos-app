@@ -275,6 +275,8 @@ export default function StatsScreen({
             jugado={!!selectedMatch.jugado}
             jornada={selectedMatch.jornada}
             rival={rivalDelPartidoSeleccionado}
+            estadisticasPersonales={estadisticasPersonales}
+            estadisticasLoaded={!loadingMatches}
           />
           {calledError && <p className="auth-error">{calledError}</p>}
         </BottomSheet>

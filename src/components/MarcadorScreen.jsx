@@ -123,7 +123,7 @@ export default function MarcadorScreen() {
           <div className="mk-th">
             <span className="mk-th-pos">#</span>
             <span className="mk-th-team">Equipo</span>
-            <span className="mk-th-form">Forma</span>
+            <span className="mk-th-form">Forma</span>  
             <span className="mk-th-dg">DG</span>
             <span className="mk-th-pts">Pts</span>
           </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { fetchConvocatoriaHistory, fetchEstadisticasPersonales } from '../api'
+import { fetchConvocatoriaHistory } from '../api'
 import { calculateAttendance } from '../utils/attendance'
 import PlayerAvatar from './PlayerAvatar'
 import RatingPanel from './RatingPanel'
@@ -79,7 +79,7 @@ function CheckIcon() {
 
 // Carta tipo "cromo" de un jugador: zona de foto con dorsal y estado, y placa
 // inferior con nombre, posición y los iconos de sus acciones en el partido.
-function LineupCard({ player, pos, offPosition = false, stats = null, showStatus = false, onClick }) {
+function LineupCard({ player, pos, offPosition = false, stats = null, showStatus = false, statsLoading = false, onClick }) {
   const icons = statsToIcons(stats)
   const Tag = onClick ? 'button' : 'div'
   return (
@@ -111,15 +111,21 @@ function LineupCard({ player, pos, offPosition = false, stats = null, showStatus
           {pos}
           {offPosition ? ' *' : ''}
         </p>
-        {icons.length > 0 && (
+        {statsLoading ? (
           <div className="al-card-icons">
-            {icons.map((ic, i) => (
-              <span key={i} className={`al-card-icon ${ic.card ? 'al-card-icon-card' : ''}`} title={ic.alt}>
-                <img src={ic.src} alt={ic.alt} />
-                {ic.n > 1 && <span className="al-card-mult">×{ic.n}</span>}
-              </span>
-            ))}
+            <span className="al-card-icon-skeleton skeleton" />
           </div>
+        ) : (
+          icons.length > 0 && (
+            <div className="al-card-icons">
+              {icons.map((ic, i) => (
+                <span key={i} className={`al-card-icon ${ic.card ? 'al-card-icon-card' : ''}`} title={ic.alt}>
+                  <img src={ic.src} alt={ic.alt} />
+                  {ic.n > 1 && <span className="al-card-mult">×{ic.n}</span>}
+                </span>
+              ))}
+            </div>
+          )
         )}
       </div>
     </Tag>
@@ -134,6 +140,12 @@ export default function AlineacionScreen({
   jugado = false,
   jornada,
   rival,
+  // Estadísticas por partido (misma fuente que ya carga el padre para el
+  // marcador de NextMatchCard / HistorialJornadas): se reciben por prop en
+  // vez de volver a pedirlas aquí, para no duplicar la petición cada vez que
+  // se abre este panel ni volver a esperar a la BBDD si el padre ya las tenía.
+  estadisticasPersonales = [],
+  estadisticasLoaded = true,
 }) {
   const [assignments, setAssignments] = useState({})
   const [offPositionSlots, setOffPositionSlots] = useState(new Set())
@@ -142,10 +154,6 @@ export default function AlineacionScreen({
   const [historyLoaded, setHistoryLoaded] = useState(false)
   // 'lineup' = la pizarra de siempre; 'rating' = panel "Valorar partido".
   const [view, setView] = useState('lineup')
-  // Quién marcó gol/asistencia/tarjeta en este partido concreto, para pintar
-  // el icono correspondiente en su carta. Solo tiene sentido una vez jugado
-  // (antes no hay player_match_stats que consultar).
-  const [statsByPlayerId, setStatsByPlayerId] = useState({})
 
   useEffect(() => {
     fetchConvocatoriaHistory()
@@ -154,24 +162,25 @@ export default function AlineacionScreen({
       .finally(() => setHistoryLoaded(true))
   }, [])
 
-  useEffect(() => {
-    if (!jugado || !matchId) {
-      setStatsByPlayerId({})
-      return
-    }
-    fetchEstadisticasPersonales()
-      .then((partidos) => {
-        const partido = partidos.find((p) => p.id === matchId)
-        const map = {}
-        ;(partido?.jugadores || []).forEach((j) => {
-          if (j.goles > 0 || j.asistencias > 0 || j.amarillas > 0 || j.tarjetaRoja) {
-            map[j.id] = j
-          }
-        })
-        setStatsByPlayerId(map)
-      })
-      .catch(() => setStatsByPlayerId({}))
-  }, [jugado, matchId])
+  // Quién marcó gol/asistencia/tarjeta en este partido concreto, para pintar
+  // el icono correspondiente en su carta. Solo tiene sentido una vez jugado
+  // (antes no hay player_match_stats que consultar).
+  const statsByPlayerId = useMemo(() => {
+    if (!jugado || !matchId) return {}
+    const partido = estadisticasPersonales.find((p) => p.id === matchId)
+    const map = {}
+    ;(partido?.jugadores || []).forEach((j) => {
+      if (j.goles > 0 || j.asistencias > 0 || j.amarillas > 0 || j.tarjetaRoja) {
+        map[j.id] = j
+      }
+    })
+    return map
+  }, [jugado, matchId, estadisticasPersonales])
+
+  // Mientras el padre todavía no ha resuelto estadisticasPersonales para un
+  // partido ya jugado, no sabemos aún si hubo gol/asistencia/tarjeta: se
+  // pinta un skeleton en vez de dar por hecho que no pasó nada.
+  const statsLoading = jugado && !estadisticasLoaded
 
   // La convocatoria editable de la pizarra sigue a la jornada mostrada en
   // NextMatchCard (convocadosDelPartido, ya sincronizada por el padre).
@@ -291,7 +300,7 @@ export default function AlineacionScreen({
         <p className="al-label">
           Convocatoria ({convocadoPlayers.length}/{players.length})
         </p>
-        <div className="al-chips">
+        {/* <div className="al-chips">
           {players.map((p) => (
             <button
               key={p.id}
@@ -302,7 +311,7 @@ export default function AlineacionScreen({
               {p.number} {p.name.split(' ')[0]}
             </button>
           ))}
-        </div>
+        </div> */}
 
         <button
           type="button"
@@ -331,6 +340,7 @@ export default function AlineacionScreen({
                     offPosition={isOffPosition}
                     stats={statsByPlayerId[player.id] || null}
                     showStatus={!jugado}
+                    statsLoading={statsLoading}
                     onClick={() => assign(slot.id, '')}
                   />
                 ) : (
@@ -367,6 +377,7 @@ export default function AlineacionScreen({
                   pos={(p.positions || [])[0] || '—'}
                   stats={statsByPlayerId[p.id] || null}
                   showStatus={!jugado}
+                  statsLoading={statsLoading}
                 />
               ))}
             </div>

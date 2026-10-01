@@ -57,6 +57,9 @@ export default function NextMatchCard({
   onNextMatch,
   hasPrevMatch = false,
   hasNextMatch = false,
+  // true mientras el resultado real (goles) todavía no ha llegado del
+  // backend mientras que el calendario ya marca este partido como jugado.
+  resultadoLoading = false,
 }) {
   const isEntrenador = currentUser?.role === 'entrenador'
   const puedeNavegar = (onPrevMatch || onNextMatch) && (hasPrevMatch || hasNextMatch)
@@ -157,9 +160,15 @@ export default function NextMatchCard({
         </div>
         <div className="next-match-score-col">
           <span className="next-match-score">
-            {nextMatch.jugado
-              ? `${nextMatch.resultado?.golesNosotros ?? 0} - ${nextMatch.resultado?.golesRival ?? 0}`
-              : horaMostrada}
+            {nextMatch.jugado ? (
+              resultadoLoading ? (
+                <span className="skeleton next-match-score-skeleton" aria-label="Cargando resultado" />
+              ) : (
+                `${nextMatch.resultado?.golesNosotros ?? 0} - ${nextMatch.resultado?.golesRival ?? 0}`
+              )
+            ) : (
+              horaMostrada
+            )}
           </span>
           {nextMatch.jugado ? (
             <span className="next-match-status-badge next-match-status-badge-played">Jugado</span>
