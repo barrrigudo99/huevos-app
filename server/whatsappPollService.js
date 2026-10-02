@@ -80,10 +80,13 @@ export async function fetchPollVotes(messageId) {
     throw new Error('La respuesta de Whapi no contiene una encuesta válida.')
   }
 
+  // Whapi identifica a cada votante con su JID ("34600111222@s.whatsapp.net");
+  // se quita el sufijo desde la @ para que la clave coincida con players.phone
+  // (solo dígitos), que es como el resto de la app busca el voto.
   const votes = {}
   for (const option of poll.results) {
     for (const voter of option.voters || []) {
-      votes[voter] = option.name
+      votes[String(voter).split('@')[0]] = option.name
     }
   }
   return votes

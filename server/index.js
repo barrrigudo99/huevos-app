@@ -758,6 +758,18 @@ function combinarFechaHora(date, time) {
   return date ? `${date}T${time || '00:00'}:00` : null
 }
 
+// 'YYYY-MM-DD' -> límites [desde, hasta) del día completo para filtrar
+// match_date (timestamp sin zona horaria): desde las 00:00 de ese día hasta
+// las 00:00 del siguiente. Devuelve null si la fecha no es válida.
+function rangoDia(fecha) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null
+  const [y, mo, d] = fecha.split('-').map(Number)
+  const inicio = new Date(Date.UTC(y, mo - 1, d))
+  if (inicio.getUTCMonth() !== mo - 1 || inicio.getUTCDate() !== d) return null
+  const siguiente = new Date(Date.UTC(y, mo - 1, d + 1)).toISOString().slice(0, 10)
+  return { desde: `${fecha}T00:00:00`, hasta: `${siguiente}T00:00:00` }
+}
+
 async function getMatchdayById(matchdayId) {
   const { data, error } = await supabase
     .from('matchdays')
@@ -1191,12 +1203,22 @@ app.get('/api/convocatoria-por-fecha', async (req, res) => {
   if (!fecha) {
     return res.status(400).json({ error: 'Falta el parámetro fecha.' })
   }
+  const dia = rangoDia(fecha)
+  if (!dia) {
+    return res.status(400).json({ error: 'El parámetro fecha debe tener formato YYYY-MM-DD.' })
+  }
 
   try {
+    // match_date lleva hora, así que se filtra por el día completo en vez de
+    // igualdad exacta. Si hubiera dos jornadas el mismo día, se toma la
+    // primera en lugar de fallar.
     const { data: m, error } = await supabase
       .from('matchdays')
       .select('whatsapp_poll_id')
-      .eq('match_date', fecha)
+      .gte('match_date', dia.desde)
+      .lt('match_date', dia.hasta)
+      .order('match_date', { ascending: true })
+      .limit(1)
       .maybeSingle()
     if (error) throw new Error(error.message)
     const pollId = m?.whatsapp_poll_id
