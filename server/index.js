@@ -24,21 +24,31 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 
 const app = express()
 
-// Orígenes permitidos para llamar a esta API: el frontend en Vercel, el
-// Vite dev server local, y cualquier subdominio de trycloudflare.com (la
-// URL del túnel de Cloudflare cambia cada vez que se reinicia, así que se
-// permite por regex en lugar de fijar una URL concreta).
+// Orígenes permitidos para llamar a esta API: el frontend en Vercel (producción
+// y previews) y el Vite dev server local.
 app.use(
   cors({
     origin: [
       'https://huevos-app-three.vercel.app',
       /^https:\/\/huevos-app-git-[a-z0-9-]+-carlos-projects-e13f8134\.vercel\.app$/,
       'http://localhost:5173',
-      /^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/,
       /^https:\/\/huevos-[a-z0-9-]+-carlos-projects-e13f8134\.vercel\.app$/,
     ],
   })
 )
+
+// Health check para Render: sin autenticación, hace una consulta mínima a
+// Supabase para comprobar que la API puede llegar a la base de datos.
+app.get('/health', async (req, res) => {
+  res.set('Cache-Control', 'no-store')
+  try {
+    const { error } = await supabase.from('seasons').select('id').limit(1)
+    if (error) throw new Error(error.message)
+    res.json({ status: 'ok', supabase: 'ok' })
+  } catch (err) {
+    res.status(503).json({ status: 'error', supabase: 'unreachable', error: err.message })
+  }
+})
 // Límite por defecto (100kb) se queda corto para la foto de perfil en
 // base64 (hasta 5MB de archivo => ~6.8MB en base64).
 app.use(express.json({ limit: '8mb' }))
