@@ -86,13 +86,13 @@ export default function LoginScreen({ onLogin }) {
         >
           Iniciar sesión
         </button>
-        <button
+        {/* <button
           type="button"
           className={`auth-tab ${mode === 'register' ? 'active' : ''}`}
           onClick={() => switchMode('register')}
         >
           Registrarse
-        </button>
+        </button> */}
       </div>
 
       {mode === 'login' ? (
@@ -114,7 +114,8 @@ export default function LoginScreen({ onLogin }) {
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
-      ) : (
+      ) 
+      : (
         <form className="card form" onSubmit={handleRegister}>
           <input
             placeholder="Nombre"

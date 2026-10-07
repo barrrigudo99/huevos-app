@@ -660,6 +660,11 @@ select {
 .status-dot-gray {
   background: #d4d3cd;
 }
+/* Convocado con la convocatoria final ya cerrada. */
+.status-dot-gold {
+  background: var(--gold);
+  box-shadow: 0 0 0 2px c9a24a(214, 179, 106, 0.25);
+}
 
 .table-scroll {
   overflow-x: auto;

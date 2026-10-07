@@ -35,11 +35,12 @@ export default function App() {
   // NextMatchCard.
   const [openMatchId, setOpenMatchId] = useState(null)
   const { votes, pollLoading, pollError, pollConfigured } = useConvocatoria()
-  // No hay vínculo formal cuenta↔jugador en el backend (users y players son
-  // colecciones con ids independientes), así que se empareja por nombre.
-  const currentUserPlayer = players.find(
-    (p) => p.name.trim().toLowerCase() === currentUser?.name?.trim().toLowerCase()
-  )
+  // Jugador de la plantilla vinculado a la cuenta (users.player_id, lo trae
+  // POST /api/login). Ya no se empareja por nombre: users.full_name y
+  // players.full_name pueden no coincidir ("Edu Alba" vs "EDU A").
+  const currentUserPlayer = currentUser?.player_id
+    ? players.find((p) => p.id === currentUser.player_id)
+    : null
 
   useEffect(() => {
     if (!currentUser) return
@@ -112,7 +113,7 @@ export default function App() {
             <PlayerProfileScreen player={currentUserPlayer} currentUser={currentUser} />
           ) : (
             <p className="hint">
-              No se encontró ningún jugador de la plantilla llamado "{currentUser.name}".
+              Tu cuenta no está vinculada a ningún jugador de la plantilla.
             </p>
           )
         )}

@@ -277,6 +277,14 @@ export default function PlantillaScreen({
     return [...players].sort((a, b) => grupo(a) - grupo(b) || porDorsal(a, b))
   }, [players, convocatoria, convocatoriaConfigured, convocatoriaFinal, partidoMostrado?.matchId])
 
+  // Convocados de la jornada mostrada con la convocatoria final ya cerrada
+  // (closedAt = matchdays.callup_closed_at): su punto de estado sale en dorado.
+  const convocadosConfirmados = useMemo(() => {
+    const final = convocatoriaFinal?.matchId === partidoMostrado?.matchId ? convocatoriaFinal : null
+    if (!final?.closedAt) return new Set()
+    return new Set(final.jugadores.filter((j) => j.called).map((j) => j.playerId))
+  }, [convocatoriaFinal, partidoMostrado?.matchId])
+
   // Texto y estado del botón de la convocatoria final según la jornada mostrada.
   const botonConvocatoriaFinal = (() => {
     if (!partidoMostrado?.matchId) return { texto: 'Crear convocatoria final', activo: false }
@@ -461,8 +469,16 @@ export default function PlantillaScreen({
         <div className="card row clickable" key={p.id} onClick={() => setSelectedPlayer(p)}>
           <PlayerAvatar player={p} />
           <span
-            className={`status-dot ${voteStatusClass(p.phone ? convocatoria[p.phone] : undefined)}`}
-            title={voteStatusTitle(p.phone ? convocatoria[p.phone] : undefined)}
+            className={`status-dot ${
+              convocadosConfirmados.has(p.id)
+                ? 'status-dot-gold'
+                : voteStatusClass(p.phone ? convocatoria[p.phone] : undefined)
+            }`}
+            title={
+              convocadosConfirmados.has(p.id)
+                ? 'Convocado'
+                : voteStatusTitle(p.phone ? convocatoria[p.phone] : undefined)
+            }
           />
           <div className="row-info">
             <p className="row-title">{p.name}</p>
