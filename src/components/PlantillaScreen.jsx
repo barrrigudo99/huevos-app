@@ -5,12 +5,12 @@ import {
   addPlayer,
   fetchCalendario,
   fetchClub,
+  fetchConvocatoria,
   fetchConvocatoriaPorFecha,
   fetchEstadisticasPersonales,
   fetchNextMatch,
   fetchNextMatchAuto,
   generarInscripcion,
-  updateClub,
   updateNextMatch,
 } from '../api'
 import PlayerProfileScreen from './PlayerProfileScreen'
@@ -18,6 +18,7 @@ import PlayerAvatar from './PlayerAvatar'
 import NextMatchCard from './NextMatchCard'
 import AlineacionScreen from './AlineacionScreen'
 import BottomSheet from './BottomSheet'
+import ConvocatoriaFinalPanel from './ConvocatoriaFinalPanel'
 
 function voteStatusClass(vote) {
   if (vote === 'Si') return 'status-dot-green'
@@ -64,17 +65,23 @@ export default function PlantillaScreen({
   // proximoPartido en cuanto ambos datos están disponibles.
   const [matchIndex, setMatchIndex] = useState(null)
   const [showMatchForm, setShowMatchForm] = useState(false)
-  const [matchForm, setMatchForm] = useState({ rival: '', date: '', time: '', whatsappPollId: '' })
+  const [matchForm, setMatchForm] = useState({ rival: '', date: '', time: '' })
   const [matchSaving, setMatchSaving] = useState(false)
   const [matchError, setMatchError] = useState('')
   const [generandoInscripcion, setGenerandoInscripcion] = useState(false)
   const [errorInscripcion, setErrorInscripcion] = useState('')
 
+  // Solo lectura: el nombre se usa en NextMatchCard. El formulario para
+  // cambiarlo se quitó al poner ahí el botón de la convocatoria final.
   const [club, setClub] = useState(null)
-  const [showClubForm, setShowClubForm] = useState(false)
-  const [clubForm, setClubForm] = useState({ name: '' })
-  const [clubSaving, setClubSaving] = useState(false)
-  const [clubError, setClubError] = useState('')
+
+  // Convocatoria final de la jornada mostrada (GET /api/matchdays/:id/convocatoria):
+  // decide el texto del botón "Crear convocatoria final" y, si está cerrada,
+  // quiénes son los convocados que se pasan a Alineación.
+  const [convocatoriaFinal, setConvocatoriaFinal] = useState(null)
+  const [convocatoriaFinalLoading, setConvocatoriaFinalLoading] = useState(false)
+  const [convocatoriaFinalError, setConvocatoriaFinalError] = useState('')
+  const [showConvocatoriaFinal, setShowConvocatoriaFinal] = useState(false)
 
   const [calendario, setCalendario] = useState([])
   // Marcador real (matches.goals_for/goals_against) por jornada, para
@@ -92,6 +99,12 @@ export default function PlantillaScreen({
   const [convocatoriaLoading, setConvocatoriaLoading] = useState(false)
   const [convocatoriaError, setConvocatoriaError] = useState('')
   const [convocatoriaConfigured, setConvocatoriaConfigured] = useState(false)
+  // Si la jornada mostrada tiene encuesta real (convocatoriaConfigured
+  // también es true con WHAPI_MOCK_VOTES) — decide "Generar"/"Regenerar".
+  const [convocatoriaHasPoll, setConvocatoriaHasPoll] = useState(false)
+  // Se incrementa para volver a pedir la convocatoria de la misma jornada
+  // (p. ej. tras generar su encuesta), sin depender de que cambie la fecha.
+  const [convocatoriaRecarga, setConvocatoriaRecarga] = useState(0)
 
   useEffect(() => {
     fetchCalendario()
@@ -114,7 +127,6 @@ export default function PlantillaScreen({
           rival: match?.rival || '',
           date: match?.date || '',
           time: match?.time || '',
-          whatsappPollId: match?.whatsappPollId || '',
         })
       })
       .catch(() => {})
@@ -163,8 +175,8 @@ export default function PlantillaScreen({
   // que se está mostrando en la tarjeta (partidoMostrado) — no lo que
   // hubiera guardado de una configuración anterior — para que nunca se
   // pueda ver un rival/fecha en el form distinto del que hay en
-  // NextMatchCard. whatsappPollId no se toca aquí: eso sí es independiente
-  // de la tarjeta.
+  // NextMatchCard. El id de la encuesta ya no está en el formulario: solo lo
+  // escribe el servidor al generarla.
   useEffect(() => {
     if (!showMatchForm) return
     setMatchForm((prev) => ({
@@ -189,6 +201,7 @@ export default function PlantillaScreen({
     if (!partidoMostrado?.date) {
       setConvocatoria({})
       setConvocatoriaConfigured(false)
+      setConvocatoriaHasPoll(false)
       setConvocatoriaError('')
       setConvocatoriaLoading(false)
       return
@@ -198,21 +211,91 @@ export default function PlantillaScreen({
     fetchConvocatoriaPorFecha(partidoMostrado.date)
       .then((res) => {
         setConvocatoriaConfigured(res.pollConfigured)
+        setConvocatoriaHasPoll(Boolean(res.hasPoll))
         setConvocatoria(res.votes || {})
       })
       .catch((err) => setConvocatoriaError(err.message))
       .finally(() => setConvocatoriaLoading(false))
-  }, [partidoMostrado?.date])
+  }, [partidoMostrado?.date, convocatoriaRecarga])
 
-  // Convocados (Sí) del partido que se está mostrando en NextMatchCard,
-  // derivados de `convocatoria` — el mismo mecanismo que ya usa la lista de
-  // jugadores de abajo. Sustituye a listaConvocados/useConvocatoria (que
-  // seguía siempre a app_state.active_matchday_id, no a la jornada navegada
-  // con las flechas) como fuente para el sheet-panel de Alineación.
-  const convocadosDelPartido = useMemo(
-    () => players.filter((p) => p.phone && convocatoria[p.phone] === 'Si'),
-    [players, convocatoria]
-  )
+  useEffect(() => {
+    const matchId = partidoMostrado?.matchId
+    if (!matchId) {
+      setConvocatoriaFinal(null)
+      setConvocatoriaFinalError('')
+      setConvocatoriaFinalLoading(false)
+      return
+    }
+    let cancelado = false
+    setConvocatoriaFinalLoading(true)
+    setConvocatoriaFinalError('')
+    fetchConvocatoria(matchId)
+      .then((res) => !cancelado && setConvocatoriaFinal(res))
+      .catch((err) => {
+        if (cancelado) return
+        setConvocatoriaFinal(null)
+        setConvocatoriaFinalError(err.message)
+      })
+      .finally(() => !cancelado && setConvocatoriaFinalLoading(false))
+    return () => {
+      cancelado = true
+    }
+  }, [partidoMostrado?.matchId, convocatoriaRecarga])
+
+  // Convocados del partido que se está mostrando en NextMatchCard, para el
+  // sheet-panel de Alineación: con la convocatoria final cerrada, los que
+  // convocó el entrenador (called); mientras no, los que votaron Sí en la
+  // encuesta (`convocatoria`, el mismo mecanismo que la lista de abajo).
+  const convocadosDelPartido = useMemo(() => {
+    if (convocatoriaFinal?.status === 'cerrada') {
+      const llamados = new Set(convocatoriaFinal.jugadores.filter((j) => j.called).map((j) => j.playerId))
+      return players.filter((p) => llamados.has(p.id))
+    }
+    return players.filter((p) => p.phone && convocatoria[p.phone] === 'Si')
+  }, [players, convocatoria, convocatoriaFinal])
+
+  // Orden de la lista de jugadores según la jornada mostrada, siempre por
+  // dorsal dentro de cada grupo (los que no tienen dorsal, al final):
+  // - convocatoria cerrada: convocados (called) y después no convocados;
+  // - con encuesta: Sí, Duda, No, sin voto;
+  // - sin encuesta: solo por dorsal.
+  // convocatoriaFinal se usa solo si es de la jornada mostrada, para no
+  // ordenar con la de la jornada anterior mientras carga la nueva.
+  const jugadoresOrdenados = useMemo(() => {
+    const porDorsal = (a, b) =>
+      (a.number || Infinity) - (b.number || Infinity) || a.name.localeCompare(b.name, 'es')
+
+    let grupo = () => 0
+    const final = convocatoriaFinal?.matchId === partidoMostrado?.matchId ? convocatoriaFinal : null
+    if (final?.status === 'cerrada') {
+      const llamados = new Set(final.jugadores.filter((j) => j.called).map((j) => j.playerId))
+      grupo = (p) => (llamados.has(p.id) ? 0 : 1)
+    } else if (convocatoriaConfigured) {
+      const ordenVoto = { Si: 0, Duda: 1, No: 2 }
+      grupo = (p) => ordenVoto[p.phone ? convocatoria[p.phone] : undefined] ?? 3
+    }
+    return [...players].sort((a, b) => grupo(a) - grupo(b) || porDorsal(a, b))
+  }, [players, convocatoria, convocatoriaConfigured, convocatoriaFinal, partidoMostrado?.matchId])
+
+  // Texto y estado del botón de la convocatoria final según la jornada mostrada.
+  const botonConvocatoriaFinal = (() => {
+    if (!partidoMostrado?.matchId) return { texto: 'Crear convocatoria final', activo: false }
+    if (convocatoriaFinalLoading) return { texto: 'Cargando convocatoria…', activo: false }
+    if (convocatoriaFinalError || !convocatoriaFinal) return { texto: 'Crear convocatoria final', activo: true }
+    const { status, jugado, jugadores } = convocatoriaFinal
+    if (status === 'sin_encuesta') {
+      return { texto: 'Crear convocatoria final', activo: false, nota: 'Primero genera la inscripción.' }
+    }
+    if (status === 'inscripcion') {
+      const inscritos = jugadores.filter((j) => j.vote === 'Si').length
+      return { texto: `Crear convocatoria final (${inscritos} inscritos)`, activo: true, primario: true }
+    }
+    const convocados = jugadores.filter((j) => j.called).length
+    return {
+      texto: `${jugado ? 'Editar' : 'Ver / editar'} convocatoria final · ${convocados} convocados`,
+      activo: true,
+    }
+  })()
 
   function handlePrevMatch() {
     setMatchIndex((i) => Math.max(0, (i ?? 0) - 1))
@@ -228,10 +311,7 @@ export default function PlantillaScreen({
 
   useEffect(() => {
     fetchClub()
-      .then((c) => {
-        setClub(c)
-        setClubForm({ name: c?.name || '' })
-      })
+      .then(setClub)
       .catch(() => {})
   }, [])
 
@@ -289,16 +369,31 @@ export default function PlantillaScreen({
     }
   }
 
-  // Lanza de verdad la encuesta de WhatsApp (Sí/No/Duda) para el rival/fecha
-  // ya guardados en nextMatch, vía Whapi.Cloud. El id del mensaje que
-  // devuelve el servidor se guarda como nextMatch.whatsappPollId.
+  // Lanza de verdad la encuesta de WhatsApp (Sí/No/Duda) para la jornada que
+  // se está viendo en NextMatchCard (partidoMostrado), vía Whapi.Cloud — no
+  // para el partido activo. Si ya tenía encuesta, el servidor responde
+  // POLL_EXISTS y se pide confirmación antes de sustituirla.
   async function handleGenerarInscripcion() {
+    const matchId = partidoMostrado?.matchId
+    if (!matchId) return
     setGenerandoInscripcion(true)
     setErrorInscripcion('')
     try {
-      const match = await generarInscripcion(currentUser.id)
-      setNextMatch(match)
-      setMatchForm((prev) => ({ ...prev, whatsappPollId: match?.whatsappPollId || '' }))
+      let match
+      try {
+        match = await generarInscripcion(matchId, currentUser.id)
+      } catch (err) {
+        if (err.code !== 'POLL_EXISTS') throw err
+        const confirmado = window.confirm(
+          'Ya hay una encuesta para esta jornada. Si generas otra, los votos de la anterior dejarán de verse. ¿Continuar?'
+        )
+        if (!confirmado) return
+        match = await generarInscripcion(matchId, currentUser.id, { confirmarReemplazo: true })
+      }
+      if (match?.matchId === nextMatch?.matchId) {
+        setNextMatch((prev) => ({ ...prev, whatsappPollId: match.whatsappPollId }))
+      }
+      setConvocatoriaRecarga((n) => n + 1)
     } catch (err) {
       setErrorInscripcion(err.message)
     } finally {
@@ -306,20 +401,6 @@ export default function PlantillaScreen({
     }
   }
 
-  async function handleSaveClub(e) {
-    e.preventDefault()
-    setClubSaving(true)
-    setClubError('')
-    try {
-      const updated = await updateClub(clubForm, currentUser.id)
-      setClub(updated)
-      setShowClubForm(false)
-    } catch (err) {
-      setClubError(err.message)
-    } finally {
-      setClubSaving(false)
-    }
-  }
 
   if (selectedPlayer) {
     return (
@@ -376,7 +457,7 @@ export default function PlantillaScreen({
         </p>
       )}
 
-      {players.map((p) => (
+      {jugadoresOrdenados.map((p) => (
         <div className="card row clickable" key={p.id} onClick={() => setSelectedPlayer(p)}>
           <PlayerAvatar player={p} />
           <span
@@ -474,19 +555,14 @@ export default function PlantillaScreen({
                     value={matchForm.time}
                     onChange={(e) => setMatchForm({ ...matchForm, time: e.target.value })}
                   />
-                  <input
-                    placeholder="ID del mensaje de la encuesta (Whapi)"
-                    value={matchForm.whatsappPollId}
-                    onChange={(e) => setMatchForm({ ...matchForm, whatsappPollId: e.target.value })}
-                  />
                   {matchError && <p className="auth-error">{matchError}</p>}
                   <button type="submit" className="btn-primary" disabled={matchSaving}>
-                    {matchSaving ? 'Guardando...' : 'Guardar convocatoria'}
+                    {matchSaving ? 'Guardando...' : 'Guardar fecha y hora'}
                   </button>
                 </form>
               ) : (
                 <button className="btn-outline" onClick={() => setShowMatchForm(true)}>
-                  {nextMatch?.whatsappPollId ? 'Editar convocatoria' : '+ Configurar encuesta del próximo partido'}
+                  Editar fecha y hora
                 </button>
               )}
 
@@ -494,31 +570,46 @@ export default function PlantillaScreen({
                 type="button"
                 className="btn-primary"
                 onClick={handleGenerarInscripcion}
-                disabled={generandoInscripcion || !nextMatch?.rival}
+                disabled={
+                  generandoInscripcion ||
+                  !partidoMostrado?.matchId ||
+                  !partidoMostrado?.rival ||
+                  convocatoriaFinal?.status === 'cerrada'
+                }
               >
-                {generandoInscripcion ? 'Generando...' : 'Generar inscripción'}
+                {generandoInscripcion
+                  ? 'Generando...'
+                  : convocatoriaHasPoll
+                    ? 'Regenerar inscripción'
+                    : 'Generar inscripción'}
               </button>
               {errorInscripcion && <p className="auth-error">{errorInscripcion}</p>}
             </>
           )}
 
-          <p className="hint">Club</p>
-          {showClubForm ? (
-            <form className="card form" onSubmit={handleSaveClub}>
-              <input
-                placeholder="Nombre del club"
-                value={clubForm.name}
-                onChange={(e) => setClubForm({ name: e.target.value })}
+          {/* Fuera del bloque "!jugado": la convocatoria final se puede editar
+              también después de jugar el partido (con aviso en el panel). */}
+          <button
+            type="button"
+            className={botonConvocatoriaFinal.primario ? 'btn-primary' : 'btn-outline'}
+            onClick={() => setShowConvocatoriaFinal(true)}
+            disabled={!botonConvocatoriaFinal.activo}
+          >
+            {botonConvocatoriaFinal.texto}
+          </button>
+          {botonConvocatoriaFinal.nota && <p className="hint">{botonConvocatoriaFinal.nota}</p>}
+          {convocatoriaFinalError && <p className="auth-error">{convocatoriaFinalError}</p>}
+
+          {showConvocatoriaFinal && partidoMostrado?.matchId && (
+            <BottomSheet title="Convocatoria final" onClose={() => setShowConvocatoriaFinal(false)}>
+              <ConvocatoriaFinalPanel
+                matchId={partidoMostrado.matchId}
+                players={players}
+                currentUser={currentUser}
+                onChanged={() => setConvocatoriaRecarga((n) => n + 1)}
+                onClose={() => setShowConvocatoriaFinal(false)}
               />
-              {clubError && <p className="auth-error">{clubError}</p>}
-              <button type="submit" className="btn-primary" disabled={clubSaving}>
-                {clubSaving ? 'Guardando...' : 'Guardar nombre del club'}
-              </button>
-            </form>
-          ) : (
-            <button className="btn-outline" onClick={() => setShowClubForm(true)}>
-              {club?.name ? `Club: ${club.name}` : '+ Configurar nombre del club'}
-            </button>
+            </BottomSheet>
           )}
         </>
       )}

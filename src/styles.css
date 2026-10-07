@@ -2283,13 +2283,18 @@ input:focus, select:focus { outline: 2px solid var(--gold); outline-offset: 1px;
 }
 
 /* ---- Carta de jugador ---- */
+/* Todo en em: font-size = ancho/10, así la carta escala entera cambiando solo
+   --al-card-w. Ojo: en los elementos que cambian su propio font-size, las
+   medidas en em van divididas por ese factor (comentado al lado). */
 .al-card {
-  --w: 64px;
+  --al-card-w: 75px;
   position: relative;
-  width: var(--w);
+  box-sizing: border-box;
+  width: 10em;
+  font-size: calc(var(--al-card-w) / 10);
   padding: 0;
-  border: 1px solid #262220;
-  border-radius: 12px;
+  border: 0.3em solid #2b2c2f;
+  border-radius: 1.2em;
   overflow: hidden;
   background: #050505;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
@@ -2303,11 +2308,8 @@ button.al-card {
 
 .al-card-photo {
   position: relative;
-  background: #151515;
-  height: calc(var(--w) * 0.78);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 8.9em;
+  background: #121314;
   overflow: hidden;
 }
 .al-card-stripe {
@@ -2316,27 +2318,28 @@ button.al-card {
   pointer-events: none;
 }
 .al-card-stripe-red {
-  background: #b7202a;
-  opacity: 0.25;
-  clip-path: polygon(40% 0%, 62% 0%, 46% 100%, 24% 100%);
+  background: var(--accent);
+  opacity: 0.28;
+  clip-path: polygon(48% 0, 66% 0, 38% 100%, 20% 100%);
 }
 .al-card-stripe-gold {
-  background: #d8b970;
-  opacity: 0.2;
-  clip-path: polygon(66% 0%, 72% 0%, 56% 100%, 50% 100%);
+  background: var(--gold);
+  opacity: 0.3;
+  clip-path: polygon(70% 0, 74% 0, 46% 100%, 42% 100%);
 }
 .al-card-dorsal {
   position: absolute;
-  top: 3px;
-  left: 3px;
   z-index: 2;
-  width: 15px;
-  height: 15px;
-  border-radius: 999px;
-  background: #d8b970;
-  color: #050505;
-  font-size: 9px;
-  font-weight: 700;
+  /* font-size 1.2em: 2em de carta = 1.667em; top .55em = .458em; left .65em = .542em */
+  font-size: 1.2em;
+  top: 0.458em;
+  left: 0.542em;
+  width: 1.667em;
+  height: 1.667em;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #0d0e10;
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2344,63 +2347,128 @@ button.al-card {
 }
 .al-card-status {
   position: absolute;
-  top: 3px;
-  right: 3px;
   z-index: 2;
-  width: 15px;
-  height: 15px;
-  border-radius: 999px;
+  top: 0.55em;
+  right: 0.65em;
+  width: 2em;
+  height: 2em;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.al-card-status svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+.al-card-status-ok {
+  background: #1c3527;
+  color: #3fb76a;
+}
+.al-card-status-off {
+  /* font-size 1.4em: 2em de carta = 1.429em; top .55em = .393em; right .65em = .464em */
+  font-size: 1.4em;
+  top: 0.393em;
+  right: 0.464em;
+  width: 1.429em;
+  height: 1.429em;
+  padding-top: 0.15em;
+  box-sizing: border-box;
+  background: var(--gold-bg);
+  color: var(--gold);
+  font-weight: 800;
+}
+
+/* Avatar "sale del círculo" (PlayerAvatar variant="cutout"): disco con aro
+   detrás y la foto encima, con el borde inferior igual al interior del aro
+   (radio 3.34em = 7em/2 - .16em) y libre por arriba. */
+.al-card-avatar {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.al-card-avatar .avatar-cutout-disc {
+  position: absolute;
+  top: 1.6em;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 7em;
+  height: 7em;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 0.16em solid var(--gold);
+  background: radial-gradient(circle at 50% 40%, #2c2d31 0%, #17181b 75%);
+  box-shadow: 0 0 1.2em rgba(214, 179, 106, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.al-card-status svg {
-  width: 10px;
-  height: 10px;
-}
-.al-card-status-ok {
-  background: rgba(63, 166, 92, 0.18);
-  color: #3fa65c;
-}
-.al-card-status-off {
-  background: rgba(216, 185, 112, 0.18);
-  color: #d8b970;
-  font-size: 11px;
-  font-weight: 700;
+.al-card-avatar .avatar-cutout-initials {
+  font-size: 2.4em;
+  font-weight: 800;
   line-height: 1;
+  color: var(--text-secondary);
 }
-.al-card-avatar {
-  position: relative;
-  z-index: 1;
+.al-card-avatar .avatar-cutout-photo {
+  position: absolute;
+  top: 0.3em;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6.68em;
+  height: 8.14em;
+  border-radius: 0 0 3.34em 3.34em;
+  overflow: hidden;
 }
-.al-card-avatar .avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  border: 1px solid #262220;
-  background: rgba(242, 234, 216, 0.08);
-  color: #f2ead8;
-  font-size: 11px;
-  font-weight: 900;
+/* Foto con fondo (JPG): se queda dentro del aro, recortada en círculo. */
+.al-card-avatar .avatar-cutout-opaque .avatar-cutout-photo {
+  top: 1.76em;
+  height: 6.68em;
+  border-radius: 50%;
 }
-.al-card-avatar .avatar img {
-  border-radius: 999px;
+.al-card-avatar .avatar-cutout-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+}
+.al-card-avatar .avatar-cutout-opaque .avatar-cutout-photo img {
+  object-position: center;
 }
 
 .al-card-plate {
+  position: relative;
   background: #050505;
-  padding: 5px 4px 6px;
+  padding: 0.8em 0.4em 0.9em;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
   min-width: 0;
+}
+/* Separador rojo/dorado entre foto y placa. */
+.al-card-plate::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0.14em;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--accent) 25%,
+    var(--accent) 55%,
+    var(--gold) 55%,
+    var(--gold) 75%,
+    transparent 100%
+  );
 }
 .al-card-name {
   margin: 0;
-  color: #f2ead8;
-  font-size: 10px;
-  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 1.25em;
+  font-weight: 800;
   line-height: 1.15;
   white-space: nowrap;
   overflow: hidden;
@@ -2408,11 +2476,11 @@ button.al-card {
   max-width: 100%;
 }
 .al-card-pos {
-  margin: 0;
-  color: #d8b970;
-  font-size: 8px;
+  margin: 0.2em 0 0;
+  color: var(--gold);
+  font-size: 0.95em;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   line-height: 1.15;
 }
 .al-card-icons {
@@ -2420,26 +2488,27 @@ button.al-card {
   flex-wrap: nowrap;
   justify-content: center;
   align-items: center;
-  gap: 2px;
-  margin-top: 2px;
-  padding-top: 3px;
-  border-top: 1px solid rgba(242, 234, 216, 0.1);
+  gap: 0.31em;
+  margin-top: 0.5em;
+  padding-top: 0.47em;
+  border-top: 0.16em solid rgba(242, 234, 216, 0.1);
+  align-self: stretch;
 }
 .al-card-icon {
   position: relative;
   flex: 0 0 auto;
-  width: 15px;
-  height: 15px;
-  border-radius: 999px;
+  width: 2.34em;
+  height: 2.34em;
+  border-radius: 50%;
   background: #f2ead8;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0.16em 0.47em rgba(0, 0, 0, 0.6);
 }
 .al-card-icon img {
-  width: 11px;
-  height: 11px;
+  width: 1.72em;
+  height: 1.72em;
   object-fit: contain;
   display: block;
 }
@@ -2447,37 +2516,78 @@ button.al-card {
 .al-card-icon-card {
   background: none;
   box-shadow: none;
-  border-radius: 2px;
+  border-radius: 0.31em;
 }
 .al-card-icon-skeleton {
   display: block;
-  width: 15px;
-  height: 15px;
-  border-radius: 999px;
+  width: 2.34em;
+  height: 2.34em;
+  border-radius: 50%;
 }
 .al-card-icon-card img {
-  width: 9px;
-  height: 12px;
+  width: 1.4em;
+  height: 1.875em;
   object-fit: cover;
 }
 .al-card-mult {
+  /* font-size 1.1em: right/bottom -.31em de carta = -.28em */
   position: absolute;
-  right: -2px;
-  bottom: -2px;
-  background: #d8b970;
+  right: -0.28em;
+  bottom: -0.28em;
+  background: var(--gold);
   color: #050505;
-  font-size: 7px;
+  font-size: 1.1em;
   font-weight: 900;
   line-height: 1;
-  padding: 1px 2px;
+  padding: 0.14em 0.28em;
   border-radius: 999px;
-  box-shadow: 0 0 0 1px #f2ead8;
+  box-shadow: 0 0 0 0.14em #f2ead8;
 }
 
 .al-bench {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+/* ---- Arrastrar para intercambiar (AlineacionScreen) ---- */
+/* touch-action: none evita que el dedo haga scroll del panel al arrastrar una
+   carta; sin selección de texto ni menú de mantener pulsado (iOS). */
+.al-card-draggable {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.al-card-draggable img {
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+.al-drag-origin .al-card {
+  opacity: 0.35;
+}
+.al-drop-over .al-card {
+  border-color: #d8b970;
+  box-shadow: 0 0 0 2px #d8b970, 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+.al-drop-over .al-slot-empty select {
+  border: 1px solid #d8b970;
+  box-shadow: 0 0 0 2px #d8b970;
+}
+.al-drag-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0.8;
+  will-change: transform;
+}
+.al-drag-ghost .al-card {
+  cursor: grabbing;
+  transform: scale(1.06);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.6);
 }
 
 
@@ -3408,3 +3518,68 @@ button.al-card {
   background: #c41e2a;
 }
 
+
+/* ---------- Convocatoria final (ConvocatoriaFinalPanel) ---------- */
+.cf-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cf-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+.cf-section-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+.cf-section-count {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.cf-row {
+  cursor: pointer;
+}
+.cf-row-selected {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+.cf-check {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.cf-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  background: var(--surface-1);
+  border-top: 1px solid var(--border);
+}
+.cf-count {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.cf-send {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.cf-send input {
+  accent-color: var(--accent);
+}

@@ -11,7 +11,12 @@ async function request(path, { headers, ...options } = {}) {
   })
   const data = await res.json().catch(() => null)
   if (!res.ok) {
-    throw new Error(data?.error || 'No se pudo conectar con el servidor local.')
+    // code (p. ej. 'POLL_EXISTS') y status permiten a quien llama distinguir
+    // un conflicto que se resuelve confirmando de un error real.
+    const err = new Error(data?.error || 'No se pudo conectar con el servidor local.')
+    err.code = data?.code
+    err.status = res.status
+    throw err
   }
   return data
 }
@@ -85,10 +90,13 @@ export function fetchNextMatchAuto() {
   return request('/next-match/auto')
 }
 
-export function markMatchAsPlayed(matchId, userId) {
+// Si la convocatoria final no está cerrada, el servidor responde 409 con
+// code 'CONVOCATORIA_NO_CERRADA' salvo que se pase forzar: true.
+export function markMatchAsPlayed(matchId, userId, { forzar = false } = {}) {
   return request(`/calendario/${matchId}/jugado`, {
     method: 'PUT',
     headers: { 'X-User-Id': userId },
+    body: JSON.stringify({ forzar }),
   })
 }
 
@@ -111,11 +119,38 @@ export function fetchPollStatus() {
   return request('/next-match/poll', { cache: 'no-store' })
 }
 
-// Genera de verdad la encuesta de WhatsApp (Sí/No/Duda) para el partido
-// configurado como próximo partido, vía Whapi.Cloud.
-export function generarInscripcion(userId) {
-  return request('/next-match/poll', {
+// Genera de verdad la encuesta de WhatsApp (Sí/No/Duda) para la jornada
+// matchId, vía Whapi.Cloud. Si ya tiene encuesta, el servidor responde 409
+// con code 'POLL_EXISTS' salvo que se pase confirmarReemplazo: true.
+export function generarInscripcion(matchId, userId, { confirmarReemplazo = false } = {}) {
+  return request(`/matchdays/${matchId}/poll`, {
     method: 'POST',
+    headers: { 'X-User-Id': userId },
+    body: JSON.stringify({ confirmarReemplazo }),
+  })
+}
+
+// Convocatoria de una jornada: { matchId, status: 'sin_encuesta' |
+// 'inscripcion' | 'cerrada', jugado, jugadores: [{ playerId, name, number,
+// phone, vote, called }], jugadoresSinTelefono, openedAt, closedAt, ... }.
+export function fetchConvocatoria(matchId) {
+  return request(`/matchdays/${matchId}/convocatoria`, { cache: 'no-store' })
+}
+
+// Guarda la convocatoria final y la deja cerrada. payload: { convocados:
+// [playerId], enviarAlGrupo, confirmarEdicionJugado }. Con el partido
+// jugado, responde 409 'PARTIDO_JUGADO' salvo confirmarEdicionJugado: true.
+export function saveConvocatoria(matchId, payload, userId) {
+  return request(`/matchdays/${matchId}/convocatoria`, {
+    method: 'PUT',
+    headers: { 'X-User-Id': userId },
+    body: JSON.stringify(payload),
+  })
+}
+
+export function reabrirConvocatoria(matchId, userId) {
+  return request(`/matchdays/${matchId}/convocatoria/reabrir`, {
+    method: 'PUT',
     headers: { 'X-User-Id': userId },
   })
 }

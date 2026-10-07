@@ -1,15 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { fetchConvocatoriaHistory } from '../api'
 import { calculateAttendance } from '../utils/attendance'
-import PlayerAvatar from './PlayerAvatar'
+import LineupCard from './LineupCard'
 import RatingPanel from './RatingPanel'
 import campoAlineacion from './icons/campo-alineacion.png'
 import campoAlineacionGris from './icons/campo-alineacion-gris.png'
-import golIcon from './icons/gol.png'
-import asistenciaIcon from './icons/asistencia.png'
-import tarjetaAmarillaIcon from './icons/tarjeta_amarilla.png'
-import tarjetaRojaIcon from './icons/tarjeta_roja.png'
-import dobleAmarillaIcon from './icons/doble_amarilla.png'
 
 // Huecos del 1-3-2-1, con la y repartida para que las cartas no se solapen.
 const SLOTS = [
@@ -55,81 +51,16 @@ function generateLineup(pool, slots, attendanceById) {
   return { assignments, offPosition }
 }
 
-// Iconos de las acciones que se pintan en la placa de la carta. La roja directa
-// y la doble amarilla comparten tarjetaRoja=true en los datos (ver esExpulsado
-// en MatchStatsPanel); amarillas distingue cuál de las dos fue.
-function statsToIcons(stats) {
-  if (!stats) return []
-  const icons = []
-  if (stats.goles > 0) icons.push({ src: golIcon, alt: 'Gol', n: stats.goles })
-  if (stats.asistencias > 0) icons.push({ src: asistenciaIcon, alt: 'Asistencia', n: stats.asistencias })
-  if (stats.amarillas >= 2) icons.push({ src: dobleAmarillaIcon, alt: 'Doble amarilla', n: 1, card: true })
-  else if (stats.tarjetaRoja) icons.push({ src: tarjetaRojaIcon, alt: 'Tarjeta roja', n: 1, card: true })
-  else if (stats.amarillas === 1) icons.push({ src: tarjetaAmarillaIcon, alt: 'Tarjeta amarilla', n: 1, card: true })
-  return icons
-}
+// Distancia (px) que hay que mover el dedo/ratón con la carta pulsada para
+// que empiece el arrastre: por debajo, es un toque corto y no hace nada.
+const DRAG_THRESHOLD = 6
 
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
-  )
-}
-
-// Carta tipo "cromo" de un jugador: zona de foto con dorsal y estado, y placa
-// inferior con nombre, posición y los iconos de sus acciones en el partido.
-function LineupCard({ player, pos, offPosition = false, stats = null, showStatus = false, statsLoading = false, onClick }) {
-  const icons = statsToIcons(stats)
-  const Tag = onClick ? 'button' : 'div'
-  return (
-    <Tag
-      type={onClick ? 'button' : undefined}
-      className="al-card"
-      onClick={onClick}
-      title={offPosition ? `${player.name} (fuera de posición)` : player.name}
-    >
-      <div className="al-card-photo">
-        <span className="al-card-stripe al-card-stripe-red" />
-        <span className="al-card-stripe al-card-stripe-gold" />
-        <span className="al-card-dorsal">{player.number}</span>
-        {showStatus &&
-          (offPosition ? (
-            <span className="al-card-status al-card-status-off">*</span>
-          ) : (
-            <span className="al-card-status al-card-status-ok">
-              <CheckIcon />
-            </span>
-          ))}
-        <div className="al-card-avatar">
-          <PlayerAvatar player={player} fallback="initials" />
-        </div>
-      </div>
-      <div className="al-card-plate">
-        <p className="al-card-name">{player.name.split(' ')[0]}</p>
-        <p className="al-card-pos">
-          {pos}
-          {offPosition ? ' *' : ''}
-        </p>
-        {statsLoading ? (
-          <div className="al-card-icons">
-            <span className="al-card-icon-skeleton skeleton" />
-          </div>
-        ) : (
-          icons.length > 0 && (
-            <div className="al-card-icons">
-              {icons.map((ic, i) => (
-                <span key={i} className={`al-card-icon ${ic.card ? 'al-card-icon-card' : ''}`} title={ic.alt}>
-                  <img src={ic.src} alt={ic.alt} />
-                  {ic.n > 1 && <span className="al-card-mult">×{ic.n}</span>}
-                </span>
-              ))}
-            </div>
-          )
-        )}
-      </div>
-    </Tag>
-  )
+// Destinos de soltar, como cadena en el atributo data-drop: 'slot:<slotId>'
+// para una posición del campo (con o sin jugador) y 'bench:<playerId>' para
+// una carta del banquillo.
+function parseDropKey(key) {
+  const i = key.indexOf(':')
+  return { type: key.slice(0, i), value: key.slice(i + 1) }
 }
 
 export default function AlineacionScreen({
@@ -148,7 +79,6 @@ export default function AlineacionScreen({
   estadisticasLoaded = true,
 }) {
   const [assignments, setAssignments] = useState({})
-  const [offPositionSlots, setOffPositionSlots] = useState(new Set())
   const [convocados, setConvocados] = useState(() => convocadosDelPartido.map((p) => p.id))
   const [history, setHistory] = useState([])
   const [historyLoaded, setHistoryLoaded] = useState(false)
@@ -235,9 +165,7 @@ export default function AlineacionScreen({
   }
 
   function handleGenerate() {
-    const { assignments: next, offPosition } = generateLineup(convocadoPlayers, SLOTS, attendanceById)
-    setAssignments(next)
-    setOffPositionSlots(offPosition)
+    setAssignments(generateLineup(convocadoPlayers, SLOTS, attendanceById).assignments)
   }
 
   // Genera la alineación automáticamente en cuanto se abre el panel, sin
@@ -256,12 +184,130 @@ export default function AlineacionScreen({
 
   function assign(slotId, playerId) {
     setAssignments((prev) => ({ ...prev, [slotId]: playerId ? Number(playerId) : null }))
-    setOffPositionSlots((prev) => {
-      if (!prev.has(slotId)) return prev
-      const next = new Set(prev)
-      next.delete(slotId)
+  }
+
+  // "Fuera de posición" se calcula a partir de las posiciones del jugador
+  // (antes era un Set que solo rellenaba generateLineup), para que siga
+  // siendo correcto tras arrastrar a un jugador a otra posición.
+  function isOffPosition(player, slot) {
+    return !(player.positions || []).includes(slot.pos)
+  }
+
+  // Intercambio al soltar una carta arrastrada. Las posiciones (SLOTS) no se
+  // mueven nunca: solo cambia qué jugador ocupa cada una.
+  //   campo -> campo: se intercambian (si el destino está vacío, se mueve).
+  //   campo -> carta del banquillo: el del banquillo entra en esa posición y
+  //     el de campo pasa al banquillo (el banquillo = convocados sin posición).
+  //   banquillo -> campo: entra en la posición; quien la ocupaba, al banquillo.
+  //   banquillo -> banquillo: nada (el banquillo se ordena por asistencia).
+  function swapByDrop(fromKey, toKey) {
+    if (fromKey === toKey) return
+    const from = parseDropKey(fromKey)
+    const to = parseDropKey(toKey)
+    setAssignments((prev) => {
+      const next = { ...prev }
+      if (from.type === 'slot' && to.type === 'slot') {
+        next[to.value] = prev[from.value] ?? null
+        next[from.value] = prev[to.value] ?? null
+      } else if (from.type === 'slot' && to.type === 'bench') {
+        next[from.value] = Number(to.value)
+      } else if (from.type === 'bench' && to.type === 'slot') {
+        next[to.value] = Number(from.value)
+      } else {
+        return prev
+      }
       return next
     })
+  }
+
+  // ---- Arrastre con Pointer Events (ratón y táctil) ----
+  // dragRef guarda el gesto en curso sin provocar renders en cada movimiento;
+  // la copia flotante se mueve directamente por su style (ghostRef). Solo se
+  // re-renderiza al empezar/terminar el arrastre y al cambiar de destino.
+  const dragRef = useRef(null)
+  const ghostRef = useRef(null)
+  const [dragging, setDragging] = useState(null)
+  const [dropOver, setDropOver] = useState(null)
+  const swapRef = useRef(swapByDrop)
+  swapRef.current = swapByDrop
+
+  function startPointer(e, fromKey, player, pos, offPosition) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    // Evita selección de texto y el arrastre nativo de imágenes en escritorio.
+    e.preventDefault()
+    const rect = e.currentTarget.getBoundingClientRect()
+    dragRef.current = {
+      pointerId: e.pointerId,
+      fromKey,
+      player,
+      pos,
+      offPosition,
+      startX: e.clientX,
+      startY: e.clientY,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+      width: rect.width,
+      active: false,
+      over: null,
+    }
+  }
+
+  useEffect(() => {
+    function moveGhost(d, x, y) {
+      if (ghostRef.current) {
+        ghostRef.current.style.transform = `translate(${x - d.offsetX}px, ${y - d.offsetY}px)`
+      }
+    }
+
+    function onMove(e) {
+      const d = dragRef.current
+      if (!d || e.pointerId !== d.pointerId) return
+      if (!d.active) {
+        if (Math.hypot(e.clientX - d.startX, e.clientY - d.startY) < DRAG_THRESHOLD) return
+        d.active = true
+        setDragging({ ...d, x: e.clientX, y: e.clientY })
+      }
+      e.preventDefault()
+      moveGhost(d, e.clientX, e.clientY)
+      // La copia flotante tiene pointer-events: none, así que esto devuelve
+      // lo que hay debajo del dedo/ratón.
+      const el = document.elementFromPoint(e.clientX, e.clientY)
+      const over = el?.closest?.('[data-drop]')?.getAttribute('data-drop') ?? null
+      if (over !== d.over) {
+        d.over = over
+        setDropOver(over)
+      }
+    }
+
+    function finish(e, drop) {
+      const d = dragRef.current
+      if (!d || e.pointerId !== d.pointerId) return
+      // Soltar fuera de una posición (over = null) o sobre la de origen: la
+      // carta vuelve a su sitio sin cambios.
+      if (drop && d.active && d.over && d.over !== d.fromKey) swapRef.current(d.fromKey, d.over)
+      dragRef.current = null
+      setDragging(null)
+      setDropOver(null)
+    }
+
+    const onUp = (e) => finish(e, true)
+    const onCancel = (e) => finish(e, false)
+    window.addEventListener('pointermove', onMove, { passive: false })
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onCancel)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onCancel)
+    }
+  }, [])
+
+  // Clases de origen (atenuado) y destino (borde dorado) para una clave.
+  function dropClass(key) {
+    if (!dragging) return ''
+    if (key === dragging.fromKey) return ' al-drag-origin'
+    if (key === dropOver) return ' al-drop-over'
+    return ''
   }
 
   if (view === 'rating') {
@@ -329,19 +375,20 @@ export default function AlineacionScreen({
           />
           {SLOTS.map((slot) => {
             const player = players.find((p) => p.id === assignments[slot.id])
-            const isOffPosition = offPositionSlots.has(slot.id)
+            const offPosition = player ? isOffPosition(player, slot) : false
             const style = { left: slot.x + '%', top: slot.y + '%' }
+            const key = `slot:${slot.id}`
             return (
-              <div className="al-slot" key={slot.id} style={style}>
+              <div className={`al-slot${dropClass(key)}`} key={slot.id} style={style} data-drop={key}>
                 {player ? (
                   <LineupCard
                     player={player}
                     pos={slot.pos}
-                    offPosition={isOffPosition}
+                    offPosition={offPosition}
                     stats={statsByPlayerId[player.id] || null}
                     showStatus={!jugado}
                     statsLoading={statsLoading}
-                    onClick={() => assign(slot.id, '')}
+                    onPointerDown={(e) => startPointer(e, key, player, slot.pos, offPosition)}
                   />
                 ) : (
                   <label className="al-slot-empty">
@@ -370,20 +417,51 @@ export default function AlineacionScreen({
           <>
             <p className="al-label">Suplentes</p>
             <div className="al-bench">
-              {suplentes.map((p) => (
-                <LineupCard
-                  key={p.id}
-                  player={p}
-                  pos={(p.positions || [])[0] || '—'}
-                  stats={statsByPlayerId[p.id] || null}
-                  showStatus={!jugado}
-                  statsLoading={statsLoading}
-                />
-              ))}
+              {suplentes.map((p) => {
+                const key = `bench:${p.id}`
+                const pos = (p.positions || [])[0] || '—'
+                return (
+                  <div key={p.id} className={`al-bench-item${dropClass(key)}`} data-drop={key}>
+                    <LineupCard
+                      player={p}
+                      pos={pos}
+                      stats={statsByPlayerId[p.id] || null}
+                      showStatus={!jugado}
+                      statsLoading={statsLoading}
+                      onPointerDown={(e) => startPointer(e, key, p, pos, false)}
+                    />
+                  </div>
+                )
+              })}
             </div>
           </>
         )}
       </div>
+
+      {/* Copia flotante de la carta que se arrastra. Va en un portal sobre
+          document.body para que el BottomSheet (overflow: hidden) no la
+          recorte; las clases .al-card no dependen del contenedor. */}
+      {dragging &&
+        createPortal(
+          <div
+            ref={ghostRef}
+            className="al-drag-ghost"
+            style={{
+              width: dragging.width,
+              transform: `translate(${dragging.x - dragging.offsetX}px, ${dragging.y - dragging.offsetY}px)`,
+            }}
+          >
+            <LineupCard
+              player={dragging.player}
+              pos={dragging.pos}
+              offPosition={dragging.offPosition}
+              stats={statsByPlayerId[dragging.player.id] || null}
+              showStatus={!jugado}
+              statsLoading={statsLoading}
+            />
+          </div>,
+          document.body
+        )}
     </div>
   )
 }

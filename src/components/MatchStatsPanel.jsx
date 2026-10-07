@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { markMatchAsPlayed, saveEstadisticasPersonalesPartido } from '../api'
+import { saveEstadisticasPersonalesPartido } from '../api'
+import { marcarJugadoConConfirmacion } from '../utils/marcarJugado'
 import PlayerAvatar from './PlayerAvatar'
 
 // Construye el estado editable a partir de lo ya guardado en
@@ -67,8 +68,8 @@ export default function MatchStatsPanel({ matchId, players, currentUser, jugador
     setMarking(true)
     setMarkError('')
     try {
-      await markMatchAsPlayed(matchId, currentUser.id)
-      onMarked?.()
+      const marcado = await marcarJugadoConConfirmacion(matchId, currentUser.id)
+      if (marcado) onMarked?.()
     } catch (err) {
       setMarkError(err.message)
     } finally {
@@ -136,7 +137,7 @@ export default function MatchStatsPanel({ matchId, players, currentUser, jugador
         <>
           {calledPlayerIds === null && <p className="hint">Cargando convocatoria...</p>}
           {calledPlayerIds !== null && jugadoresVisibles.length === 0 && (
-            <p className="empty">Nadie confirmó asistencia a este partido.</p>
+            <p className="empty">No hay convocados en esta jornada. Crea la convocatoria final desde Plantilla.</p>
           )}
           {jugadoresVisibles.map((p) => {
             const d = borrador[p.id] || { goles: 0, asistencias: 0, amarillas: 0, rojaManual: false }

@@ -87,22 +87,37 @@ CREATE TABLE matchdays (
     status             VARCHAR(20) NOT NULL DEFAULT 'scheduled'
                         CHECK (status IN ('scheduled','played','postponed','cancelled')),
     whatsapp_poll_id    VARCHAR(100),   -- id de la encuesta de WhatsApp asociada a esta jornada (vía Whapi)
+    -- Estado de la convocatoria de esta jornada (ver docs/plan-convocatoria-final.md):
+    -- sin_encuesta -> inscripcion (encuesta abierta) -> cerrada (convocatoria final guardada)
+    callup_status      VARCHAR(12) NOT NULL DEFAULT 'sin_encuesta'
+                        CONSTRAINT matchdays_callup_status_chk
+                        CHECK (callup_status IN ('sin_encuesta','inscripcion','cerrada')),
+    callup_opened_at   TIMESTAMP,
+    callup_closed_at   TIMESTAMP,
+    callup_closed_by   INTEGER REFERENCES users(id),
+    CONSTRAINT matchdays_callup_closed_chk
+        CHECK (callup_status <> 'cerrada' OR callup_closed_at IS NOT NULL),
     UNIQUE (season_id, competition_id, jornada_number)
 );
 
--- Convocatorias: quién fue llamado a cada jornada y si finalmente asistió.
--- Se referencia a matchday (no a match) porque la convocatoria se hace
--- ANTES de saber si el partido se juega o cuál es el resultado.
+-- Convocatorias: una fila por jugador de la plantilla y jornada cuya
+-- convocatoria final se ha guardado. Se referencia a matchday (no a match)
+-- porque la convocatoria se hace ANTES de saber si el partido se juega o
+-- cuál es el resultado.
 CREATE TABLE call_ups (
     id               SERIAL PRIMARY KEY,
     matchday_id      INTEGER NOT NULL REFERENCES matchdays(id),
     player_id        INTEGER NOT NULL REFERENCES players(id),
-    called           BOOLEAN NOT NULL DEFAULT TRUE,   -- fue convocado
-    attended         BOOLEAN,                          -- asistio (NULL = aun no se sabe)
+    called           BOOLEAN NOT NULL DEFAULT FALSE,  -- convocado por el entrenador (lo único que cuenta para asistencia)
+    vote             VARCHAR(4)
+                      CONSTRAINT call_ups_vote_chk
+                      CHECK (vote IS NULL OR vote IN ('Si','No','Duda')),  -- voto de WhatsApp, solo informativo
+    attended         BOOLEAN,                          -- asistencia real; hoy no se rellena (NULL)
     role_in_squad    VARCHAR(20)
                       CHECK (role_in_squad IN ('titular','suplente','no_convocado')),
     reason_absence   VARCHAR(100),                     -- 'lesion','sancion','motivos personales', etc.
     created_at       TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at       TIMESTAMP NOT NULL DEFAULT now(),
     UNIQUE (matchday_id, player_id)
 );
 
@@ -244,22 +259,20 @@ JOIN matches m    ON m.id = tr.match_id
 JOIN matchdays md ON md.id = m.matchday_id
 GROUP BY md.season_id;
 
--- Ratio de asistencia a convocatorias por jugador y temporada
+-- Ratio de asistencia a convocatorias por jugador y temporada: veces
+-- convocado (called) / jornadas jugadas por el equipo. Mismo criterio que
+-- el ranking (contarAsistenciasPorJugador en server/index.js).
 CREATE VIEW season_call_up_attendance AS
-SELECT
-    p.id                          AS player_id,
-    p.full_name,
-    md.season_id,
-    COUNT(*) FILTER (WHERE cu.called)                          AS times_called,
-    COUNT(*) FILTER (WHERE cu.called AND cu.attended)          AS times_attended,
-    ROUND(
-        100.0 * COUNT(*) FILTER (WHERE cu.called AND cu.attended)
-        / NULLIF(COUNT(*) FILTER (WHERE cu.called), 0), 1
-    )                                                           AS attendance_pct
+SELECT p.id AS player_id, p.full_name, md.season_id,
+       COUNT(*) FILTER (WHERE cu.called)                         AS times_called,
+       played.total                                              AS team_played,
+       ROUND(100.0 * COUNT(*) FILTER (WHERE cu.called) / NULLIF(played.total, 0), 1) AS attendance_pct
 FROM call_ups cu
 JOIN players p    ON p.id = cu.player_id
-JOIN matchdays md ON md.id = cu.matchday_id
-GROUP BY p.id, p.full_name, md.season_id;
+JOIN matchdays md ON md.id = cu.matchday_id AND md.status = 'played'
+JOIN (SELECT season_id, count(*) AS total FROM matchdays WHERE status = 'played' GROUP BY season_id) played
+     ON played.season_id = md.season_id
+GROUP BY p.id, p.full_name, md.season_id, played.total;
 
 -- ============================================================
 -- ÍNDICES recomendados
@@ -275,6 +288,9 @@ CREATE INDEX idx_mvp_match ON match_mvp_votes(match_id);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_callups_matchday ON call_ups(matchday_id);
 CREATE INDEX idx_callups_player ON call_ups(player_id);
+CREATE INDEX idx_callups_matchday_called ON call_ups(matchday_id) WHERE called;
+CREATE INDEX idx_callups_player_called   ON call_ups(player_id)   WHERE called;
+CREATE INDEX idx_matchdays_callup_status ON matchdays(callup_status);
 
 -- ============================================================
 -- SEMILLA: seasons y competitions no existen en ningún dato

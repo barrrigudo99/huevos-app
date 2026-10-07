@@ -137,3 +137,43 @@ export async function createPollMessage({ title, options = ['Si', 'No', 'Duda'] 
   }
   return messageId
 }
+
+// Envía un mensaje de texto al grupo (WHAPI_TO) vía Whapi.Cloud. Lo usa la
+// convocatoria final con "Enviar lista al grupo". Con el modo simulación de
+// votos activo (WHAPI_MOCK_VOTES, nunca en producción) no envía nada: solo
+// lo escribe en el log del servidor.
+export async function sendTextMessage({ body }) {
+  if (isMockVotesActive()) {
+    console.log(`[WHAPI_MOCK_VOTES] Mensaje NO enviado al grupo:\n${body}`)
+    return null
+  }
+
+  const token = process.env.WHAPI_TOKEN
+  const to = process.env.WHAPI_TO
+  if (!token) {
+    throw new Error('Falta configurar WHAPI_TOKEN en el servidor.')
+  }
+  if (!to) {
+    throw new Error('Falta configurar WHAPI_TO en el servidor.')
+  }
+
+  let res
+  try {
+    res = await fetch(`${WHAPI_BASE}/messages/text`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ to, body }),
+    })
+  } catch {
+    throw new Error('No se pudo conectar con Whapi.Cloud.')
+  }
+
+  const data = await res.json().catch(() => null)
+  if (!res.ok) {
+    throw new Error(data?.error?.message || `Whapi respondió con error (${res.status}) al enviar el mensaje.`)
+  }
+  return data?.message?.id || data?.id || null
+}

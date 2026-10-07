@@ -5,10 +5,10 @@ import {
   fetchEstadisticasPersonales,
   fetchRanking,
   fetchAsistentesConvocatoria,
-  markMatchAsPlayed,
   unmarkMatchAsPlayed,
 } from '../api'
 import { OUR_TEAM, displayTeamName, sortedMatchesForTeam } from '../data/league'
+import { marcarJugadoConConfirmacion } from '../utils/marcarJugado'
 import MatchStatsPanel from './MatchStatsPanel'
 import MatchResultPanel from './MatchResultPanel'
 import HistorialJornadas from './HistorialJornadas'
@@ -83,8 +83,8 @@ export default function StatsScreen({
   }, [openMatchId, calendario])
 
   // Al elegir un partido (selectedMatch, para Alineación, o statsMatch, para
-  // anotar estadísticas) se calcula qué jugadores votaron "Sí" en su
-  // convocatoria (call_ups.attended = true), para no listarlos a todos en
+  // anotar estadísticas) se calcula quién está en su convocatoria final
+  // (call_ups.called = true), para no listarlos a todos en
   // AlineacionScreen/MatchStatsPanel. Si falla la consulta, se opta por no
   // mostrar a nadie en vez de mostrar la plantilla completa sin filtrar.
   const matchIdParaConvocados = selectedMatch?.id ?? statsMatch?.id
@@ -114,9 +114,10 @@ export default function StatsScreen({
   // de anotar estadísticas individuales para ese partido.
   function marcarPartidoComoJugado(partido) {
     if (!currentUser?.id) return
-    return markMatchAsPlayed(partido.id, currentUser.id)
-      .then(() => fetchCalendario())
+    return marcarJugadoConConfirmacion(partido.id, currentUser.id)
+      .then((marcado) => (marcado ? fetchCalendario() : null))
       .then((cal) => {
+        if (!cal) return
         setCalendario(cal)
         const match = cal.find((m) => m.id === partido.id)
         if (match) {

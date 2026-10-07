@@ -7,6 +7,7 @@ import {
   createPollMessage,
   fetchPollVotes,
   isMockVotesActive,
+  sendTextMessage,
   setMockPlayerPhonesProvider,
 } from './whatsappPollService.js'
 
@@ -240,15 +241,18 @@ async function getPlayedMatchdayIds(seasonId) {
   return data.map((m) => m.id)
 }
 
-// Asistencias a convocatoria (call_ups.attended = true) por jugador dentro de
-// un conjunto de jornadas. Devuelve Map player_id -> nº de jornadas asistidas.
-// El % se calcula fuera dividiendo entre getPlayedMatchdayIds().length.
+// Asistencias a convocatoria por jugador dentro de un conjunto de jornadas:
+// cuenta las jornadas en las que el entrenador lo convocó (call_ups.called =
+// true). El voto de WhatsApp (call_ups.vote) no cuenta: votar Sí y no ser
+// convocado cuenta como No. Devuelve Map player_id -> nº de jornadas
+// convocado. El % se calcula fuera dividiendo entre
+// getPlayedMatchdayIds().length.
 async function contarAsistenciasPorJugador(matchdayIds) {
   if (matchdayIds.length === 0) return new Map()
   const { data, error } = await supabase
     .from('call_ups')
     .select('player_id')
-    .eq('attended', true)
+    .eq('called', true)
     .in('matchday_id', matchdayIds)
   if (error) throw new Error(error.message)
   const porJugador = new Map()
@@ -773,7 +777,7 @@ function rangoDia(fecha) {
 async function getMatchdayById(matchdayId) {
   const { data, error } = await supabase
     .from('matchdays')
-    .select('id, opponent_club_id, match_date, whatsapp_poll_id')
+    .select('id, opponent_club_id, match_date, whatsapp_poll_id, status, callup_status, callup_opened_at, callup_closed_at, callup_closed_by')
     .eq('id', matchdayId)
     .maybeSingle()
   if (error) throw new Error(error.message)
@@ -855,35 +859,6 @@ async function resolverMatchdayActivo({ matchId, rival, date, time, actual }) {
   return crearMatchdayAdHoc({ rival, date, time })
 }
 
-// Convierte {phone: 'Si'|'No'|'Duda'} en filas de call_ups: una por cada
-// jugador de la plantilla, called=true siempre. 'Duda' o ausencia de voto
-// se guarda como attended=NULL — sin equivalente booleano, ver
-// migration-diagnosis.md §3c.
-async function guardarCallUpsDesdeVotos(matchdayId, votes) {
-  const players = await fetchPlayersFromSupabase()
-  const rows = players.map((p) => {
-    const vote = p.phone ? votes[p.phone] : undefined
-    const attended = vote === 'Si' ? true : vote === 'No' ? false : null
-    return { matchday_id: matchdayId, player_id: p.id, called: true, attended, role_in_squad: null }
-  })
-  if (rows.length === 0) return
-  const { error } = await supabase.from('call_ups').upsert(rows, { onConflict: 'matchday_id,player_id' })
-  if (error) throw new Error(error.message)
-}
-
-// Se llama al dejar de ser el partido activo: guarda un último snapshot de
-// sus votos en call_ups antes de perder el puntero — mismo papel que antes
-// cumplía el snapshot votes/votesUpdatedAt en db_convocatorias_aut.json.
-async function archivarVotos(matchdayId, pollId) {
-  let votes = {}
-  try {
-    votes = await fetchPollVotes(pollId)
-  } catch {
-    votes = {}
-  }
-  await guardarCallUpsDesdeVotos(matchdayId, votes)
-}
-
 app.get('/api/next-match', async (req, res) => {
   try {
     const activeId = await getActiveMatchdayId()
@@ -900,7 +875,11 @@ app.get('/api/next-match', async (req, res) => {
 app.put('/api/next-match', requireEntrenador(), async (req, res) => {
   try {
     const matchIdBody = req.body.matchId != null ? Number(req.body.matchId) : null
-    const { rival, date, time, whatsappPollId } = req.body
+    // whatsappPollId del body se ignora a propósito: el id de la encuesta
+    // solo lo escribe el servidor al generarla (POST /api/matchdays/:id/poll).
+    // Aceptarlo desde el formulario permitía que una jornada heredara la
+    // encuesta de otra.
+    const { rival, date, time } = req.body
     const clubNameById = await getClubNameById()
 
     const activeId = await getActiveMatchdayId()
@@ -922,25 +901,21 @@ app.put('/api/next-match', requireEntrenador(), async (req, res) => {
       actual,
     })
 
-    // Si cambiamos a un partido distinto y el que deja de ser el activo
-    // tenía encuesta configurada, se archiva antes de perder el puntero.
-    // También se archiva sin encuesta real si el modo mock está activo, para
-    // que call_ups salga consistente con los votos simulados que ya ve
-    // PlantillaScreen (si no, con el mock activo pero sin whatsapp_poll_id,
-    // esto nunca se ejecutaría y call_ups se quedaría vacía).
-    if (actual && actual.id !== matchdayId && (actual.whatsappPollId || isMockVotesActive())) {
-      await archivarVotos(actual.id, actual.whatsappPollId)
-    }
+    // Cambiar de partido activo ya no copia votos a call_ups: call_ups solo
+    // se escribe al guardar la convocatoria final (PUT
+    // /api/matchdays/:id/convocatoria).
 
-    const nuevoPollId = whatsappPollId ?? (actual?.id === matchdayId ? actual?.whatsappPollId : '') ?? ''
     // match_date también se actualiza aquí para una jornada ya existente del
-    // calendario (no solo al crearla ad-hoc): antes este endpoint solo
-    // tocaba whatsapp_poll_id, así que cambiar la hora (o la fecha) de un
-    // partido ya presente en el calendario nunca se guardaba.
-    const updates = { whatsapp_poll_id: nuevoPollId || null }
-    if (dateFinal) updates.match_date = combinarFechaHora(dateFinal, timeFinal)
-    const { error: updErr } = await supabase.from('matchdays').update(updates).eq('id', matchdayId)
-    if (updErr) throw new Error(updErr.message)
+    // calendario (no solo al crearla ad-hoc). whatsapp_poll_id no se toca:
+    // cada jornada conserva la encuesta que tuviera (antes, al cambiar de
+    // partido activo, se le ponía '' -> NULL y perdía la suya).
+    if (dateFinal) {
+      const { error: updErr } = await supabase
+        .from('matchdays')
+        .update({ match_date: combinarFechaHora(dateFinal, timeFinal) })
+        .eq('id', matchdayId)
+      if (updErr) throw new Error(updErr.message)
+    }
 
     await setActiveMatchdayId(matchdayId)
 
@@ -948,18 +923,24 @@ app.put('/api/next-match', requireEntrenador(), async (req, res) => {
     const { rival: rivalOut, date: dateOut, time: timeOut } = matchdayRivalDate(final, clubNameById)
     res.json({ matchId: final.id, rival: rivalOut, date: dateOut, time: timeOut, whatsappPollId: final.whatsapp_poll_id || '' })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(err.status || 500).json({ error: err.message, code: err.code })
   }
 })
 
+// Historial de convocatorias finales (jornadas con callup_status =
+// 'cerrada'), con la forma que ya espera AlineacionScreen/calculateAttendance:
+// votes[phone] = 'Si' si el entrenador lo convocó (called), 'No' si no. El
+// voto de WhatsApp (call_ups.vote) no se usa aquí: no cuenta para asistencia.
 app.get('/api/convocatoria-history', async (req, res) => {
   try {
-    const activeId = await getActiveMatchdayId()
     const [{ data: callUps, error: cuErr }, { data: players, error: playersErr }, { data: matchdays, error: mdErr }] =
       await Promise.all([
-        supabase.from('call_ups').select('matchday_id, player_id, attended'),
+        supabase.from('call_ups').select('matchday_id, player_id, called'),
         supabase.from('players').select('id, phone'),
-        supabase.from('matchdays').select('id, opponent_club_id, match_date, whatsapp_poll_id'),
+        supabase
+          .from('matchdays')
+          .select('id, opponent_club_id, match_date, whatsapp_poll_id')
+          .eq('callup_status', 'cerrada'),
       ])
     if (cuErr) throw new Error(cuErr.message)
     if (playersErr) throw new Error(playersErr.message)
@@ -971,11 +952,11 @@ app.get('/api/convocatoria-history', async (req, res) => {
 
     const porPartido = new Map()
     for (const cu of callUps) {
-      if (cu.matchday_id === activeId) continue
+      if (!matchdayById.has(cu.matchday_id)) continue
       const phone = phoneById.get(cu.player_id)
       if (!phone) continue
       if (!porPartido.has(cu.matchday_id)) porPartido.set(cu.matchday_id, {})
-      porPartido.get(cu.matchday_id)[phone] = cu.attended === true ? 'Si' : cu.attended === false ? 'No' : null
+      porPartido.get(cu.matchday_id)[phone] = cu.called ? 'Si' : 'No'
     }
 
     const historial = [...porPartido.entries()].map(([matchdayId, votes]) => {
@@ -998,10 +979,9 @@ app.get('/api/convocatoria-history', async (req, res) => {
   }
 })
 
-// Jugadores que votaron "Sí" en la convocatoria de una jornada concreta
-// (call_ups.attended = true). Lo usa MatchStatsPanel para no listar a quien
-// no confirmó asistencia. call_ups.called es siempre true en las filas que
-// existen (ver guardarCallUpsDesdeVotos) — el voto real vive en `attended`.
+// Jugadores de la convocatoria final de una jornada concreta (call_ups.called
+// = true, lo decide el entrenador). Lo usan MatchStatsPanel y la Alineación
+// de StatsScreen para listar solo a los convocados.
 app.get('/api/call-ups/:matchdayId', async (req, res) => {
   const matchdayId = Number(req.params.matchdayId)
   try {
@@ -1009,7 +989,7 @@ app.get('/api/call-ups/:matchdayId', async (req, res) => {
       .from('call_ups')
       .select('player_id')
       .eq('matchday_id', matchdayId)
-      .eq('attended', true)
+      .eq('called', true)
     if (error) throw new Error(error.message)
     res.json({ playerIds: data.map((row) => row.player_id) })
   } catch (err) {
@@ -1017,26 +997,283 @@ app.get('/api/call-ups/:matchdayId', async (req, res) => {
   }
 })
 
-// Genera de verdad la encuesta de WhatsApp (Sí/No/Duda) para el partido
-// activo y guarda el id del mensaje en matchdays.whatsapp_poll_id (el mismo
-// campo que ya usa GET /api/next-match/poll para consultar después los
-// votos vía fetchPollVotes).
-app.post('/api/next-match/poll', requireEntrenador(), async (req, res) => {
+// Genera de verdad la encuesta de WhatsApp (Sí/No/Duda) para la jornada
+// :id — la que se está viendo en NextMatchCard, NO el partido activo — y
+// guarda el id del mensaje en matchdays.whatsapp_poll_id (el campo que usan
+// GET /api/next-match/poll y /api/convocatoria-por-fecha para consultar
+// después los votos vía fetchPollVotes). Sustituye a POST
+// /api/next-match/poll, que siempre generaba la encuesta del partido activo.
+// Si la jornada ya tiene encuesta, exige { confirmarReemplazo: true } en el
+// body: regenerarla deja inaccesibles los votos de la anterior. Con la
+// convocatoria ya cerrada no se puede: hay que reabrirla antes. Deja la
+// jornada en callup_status = 'inscripcion'.
+app.post('/api/matchdays/:id/poll', requireEntrenador(), async (req, res) => {
+  const matchdayId = Number(req.params.id)
+  if (!Number.isInteger(matchdayId) || matchdayId <= 0) {
+    return res.status(400).json({ error: 'Id de jornada no válido.', code: 'ID_INVALIDO' })
+  }
   try {
-    const activeId = await getActiveMatchdayId()
-    if (!activeId) return res.status(400).json({ error: 'Configura antes el rival y la fecha del próximo partido.' })
-    const m = await getMatchdayById(activeId)
+    const { data: m, error } = await supabase
+      .from('matchdays')
+      .select('id, opponent_club_id, match_date, whatsapp_poll_id, status, callup_status')
+      .eq('id', matchdayId)
+      .maybeSingle()
+    if (error) throw new Error(error.message)
+    if (!m) return res.status(404).json({ error: 'Jornada no encontrada.', code: 'NO_ENCONTRADA' })
+    if (m.status === 'played') {
+      return res.status(409).json({ error: 'Este partido ya está jugado.', code: 'PARTIDO_JUGADO' })
+    }
+    if (m.callup_status === 'cerrada') {
+      return res.status(409).json({
+        error: 'La convocatoria final ya está cerrada. Reábrela antes de generar otra inscripción.',
+        code: 'CONVOCATORIA_CERRADA',
+      })
+    }
+    if (m.whatsapp_poll_id && req.body?.confirmarReemplazo !== true) {
+      return res.status(409).json({ error: 'Esta jornada ya tiene una encuesta.', code: 'POLL_EXISTS' })
+    }
+
     const { rival, date } = matchdayRivalDate(m, await getClubNameById())
-    if (!rival) return res.status(400).json({ error: 'Configura antes el rival y la fecha del próximo partido.' })
+    if (!rival) {
+      return res.status(400).json({ error: 'Esta jornada no tiene rival configurado.', code: 'SIN_RIVAL' })
+    }
 
     const titulo = `Convocatoria vs ${rival}${date ? ` (${date})` : ''} — ¿Vienes?`
-    const messageId = await createPollMessage({ title: titulo, options: ['Si', 'No', 'Duda'] })
-    const { error: updErr } = await supabase.from('matchdays').update({ whatsapp_poll_id: messageId }).eq('id', activeId)
+    let messageId
+    try {
+      messageId = await createPollMessage({ title: titulo, options: ['Si', 'No', 'Duda'] })
+    } catch (err) {
+      return res.status(502).json({ error: err.message, code: 'WHAPI_ERROR' })
+    }
+    const { error: updErr } = await supabase
+      .from('matchdays')
+      .update({ whatsapp_poll_id: messageId, callup_status: 'inscripcion', callup_opened_at: new Date().toISOString() })
+      .eq('id', matchdayId)
     if (updErr) throw new Error(updErr.message)
 
-    res.json({ matchId: activeId, rival, date, whatsappPollId: messageId })
+    res.json({ matchId: matchdayId, rival, date, whatsappPollId: messageId, status: 'inscripcion' })
   } catch (err) {
-    res.status(502).json({ error: err.message })
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ---------- Convocatoria final (ver docs/plan-convocatoria-final.md) ----------
+//
+// Cada jornada tiene su convocatoria con callup_status:
+//   sin_encuesta -> inscripcion (POST /api/matchdays/:id/poll) -> cerrada
+//   (PUT /api/matchdays/:id/convocatoria) -> inscripcion otra vez (reabrir).
+// call_ups solo se escribe al guardar la convocatoria final: called = lo que
+// decide el entrenador (lo único que cuenta para asistencia), vote = voto de
+// WhatsApp en ese momento (solo informativo).
+
+const VOTOS_VALIDOS = new Set(['Si', 'No', 'Duda'])
+
+function errorHttp(status, code, message) {
+  const e = new Error(message)
+  e.status = status
+  e.code = code
+  return e
+}
+
+// Votos de la encuesta de una jornada como {phone: 'Si'|'No'|'Duda'}. Si no se
+// pueden leer, error 502 WHAPI_ERROR (quien llama no debe escribir nada).
+async function leerVotosEncuesta(pollId) {
+  try {
+    return await fetchPollVotes(pollId)
+  } catch (err) {
+    throw errorHttp(502, 'WHAPI_ERROR', `No se pudieron leer los votos de la encuesta: ${err.message}`)
+  }
+}
+
+async function getCallUpsDeJornada(matchdayId) {
+  const { data, error } = await supabase.from('call_ups').select('player_id, called, vote').eq('matchday_id', matchdayId)
+  if (error) throw new Error(error.message)
+  return new Map(data.map((r) => [r.player_id, r]))
+}
+
+// Estado completo de la convocatoria de una jornada, para el panel:
+// - sin_encuesta: nadie votado ni convocado.
+// - inscripcion: votos en directo de Whapi; called es la propuesta — lo que
+//   ya hubiera guardado el entrenador si se reabrió, si no, los que votaron Sí.
+// - cerrada: todo sale de call_ups, sin llamar a Whapi.
+async function construirConvocatoria(m) {
+  const players = await fetchPlayersFromSupabase()
+  const filas = m.callup_status === 'sin_encuesta' ? new Map() : await getCallUpsDeJornada(m.id)
+  const votes = m.callup_status === 'inscripcion' ? await leerVotosEncuesta(m.whatsapp_poll_id) : null
+
+  const jugadores = players.map((p) => {
+    const fila = filas.get(p.id)
+    let vote = null
+    let called = false
+    if (m.callup_status === 'inscripcion') {
+      const v = p.phone ? votes[p.phone] : undefined
+      vote = VOTOS_VALIDOS.has(v) ? v : null
+      called = fila ? fila.called : vote === 'Si'
+    } else if (m.callup_status === 'cerrada') {
+      vote = fila?.vote ?? null
+      called = fila?.called ?? false
+    }
+    return { playerId: p.id, name: p.name, number: p.number, phone: p.phone || '', vote, called }
+  })
+
+  return {
+    matchId: m.id,
+    status: m.callup_status,
+    jugado: m.status === 'played',
+    whatsappPollId: m.whatsapp_poll_id || '',
+    openedAt: m.callup_opened_at,
+    closedAt: m.callup_closed_at,
+    closedBy: m.callup_closed_by,
+    jugadores,
+    jugadoresSinTelefono: players.filter((p) => !p.phone).map((p) => p.id),
+  }
+}
+
+// "2026-10-11" -> "domingo 11 de octubre"
+function fechaLarga(date) {
+  if (!date) return ''
+  const d = new Date(`${date}T00:00:00Z`)
+  if (Number.isNaN(d.getTime())) return date
+  return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
+}
+
+function mensajeConvocatoria({ rival, date, time }, convocados) {
+  const hora = time && time !== '00:00' ? ` ${time}` : ''
+  const lineas = convocados.map((p, i) => `${i + 1}. ${p.name}${p.number ? ` (${p.number})` : ''}`)
+  return [
+    `Convocatoria vs ${rival || 'rival por confirmar'} — ${fechaLarga(date)}${hora}`.trim(),
+    ...lineas,
+    `Total: ${convocados.length} convocados`,
+  ].join('\n')
+}
+
+function matchdayIdDeParams(req) {
+  const id = Number(req.params.id)
+  if (!Number.isInteger(id) || id <= 0) throw errorHttp(400, 'ID_INVALIDO', 'Id de jornada no válido.')
+  return id
+}
+
+function responderError(res, err) {
+  res.status(err.status || 500).json({ error: err.message, code: err.code })
+}
+
+app.get('/api/matchdays/:id/convocatoria', async (req, res) => {
+  res.set('Cache-Control', 'no-store')
+  try {
+    const m = await getMatchdayById(matchdayIdDeParams(req))
+    if (!m) throw errorHttp(404, 'NO_ENCONTRADA', 'Jornada no encontrada.')
+    res.json(await construirConvocatoria(m))
+  } catch (err) {
+    responderError(res, err)
+  }
+})
+
+// Guarda (o edita) la convocatoria final y la deja cerrada. Body:
+// { convocados: [playerId], enviarAlGrupo?: bool, confirmarEdicionJugado?: bool }.
+// Escribe una fila por jugador de la plantilla (called + vote). Si falla la
+// lectura de votos no escribe nada; si falla el envío al grupo, la
+// convocatoria queda guardada igualmente y se devuelve `aviso`.
+app.put('/api/matchdays/:id/convocatoria', requireEntrenador(), async (req, res) => {
+  try {
+    const matchdayId = matchdayIdDeParams(req)
+    const { convocados, enviarAlGrupo = false, confirmarEdicionJugado = false } = req.body || {}
+    if (!Array.isArray(convocados) || !convocados.every((id) => Number.isInteger(id))) {
+      throw errorHttp(400, 'IDS_INVALIDOS', 'convocados debe ser una lista de ids de jugador.')
+    }
+
+    const m = await getMatchdayById(matchdayId)
+    if (!m) throw errorHttp(404, 'NO_ENCONTRADA', 'Jornada no encontrada.')
+    if (m.callup_status === 'sin_encuesta') {
+      throw errorHttp(409, 'SIN_ENCUESTA', 'Primero genera la inscripción de esta jornada.')
+    }
+    if (m.status === 'played' && confirmarEdicionJugado !== true) {
+      throw errorHttp(409, 'PARTIDO_JUGADO', 'Este partido ya está jugado.')
+    }
+
+    const players = await fetchPlayersFromSupabase()
+    const idsPlantilla = new Set(players.map((p) => p.id))
+    const desconocidos = convocados.filter((id) => !idsPlantilla.has(id))
+    if (desconocidos.length > 0) {
+      throw errorHttp(400, 'IDS_INVALIDOS', `Jugadores no encontrados: ${desconocidos.join(', ')}.`)
+    }
+
+    // Votos: en inscripción se leen de Whapi (si falla, 502 y nada escrito);
+    // al editar una ya cerrada se conservan los guardados.
+    let voteDe
+    if (m.callup_status === 'inscripcion') {
+      const votes = await leerVotosEncuesta(m.whatsapp_poll_id)
+      voteDe = (p) => {
+        const v = p.phone ? votes[p.phone] : undefined
+        return VOTOS_VALIDOS.has(v) ? v : null
+      }
+    } else {
+      const filas = await getCallUpsDeJornada(matchdayId)
+      voteDe = (p) => filas.get(p.id)?.vote ?? null
+    }
+
+    const ahora = new Date().toISOString()
+    const seleccion = new Set(convocados)
+    const rows = players.map((p) => ({
+      matchday_id: matchdayId,
+      player_id: p.id,
+      called: seleccion.has(p.id),
+      vote: voteDe(p),
+      attended: null,
+      role_in_squad: null,
+      updated_at: ahora,
+    }))
+    if (rows.length > 0) {
+      const { error } = await supabase.from('call_ups').upsert(rows, { onConflict: 'matchday_id,player_id' })
+      if (error) throw new Error(error.message)
+    }
+
+    const { error: updErr } = await supabase
+      .from('matchdays')
+      .update({ callup_status: 'cerrada', callup_closed_at: ahora, callup_closed_by: Number(req.get('X-User-Id')) })
+      .eq('id', matchdayId)
+    if (updErr) throw new Error(updErr.message)
+
+    let aviso
+    if (enviarAlGrupo === true) {
+      const datos = matchdayRivalDate(m, await getClubNameById())
+      const lista = players.filter((p) => seleccion.has(p.id)).sort((a, b) => (a.number || 0) - (b.number || 0))
+      try {
+        await sendTextMessage({ body: mensajeConvocatoria(datos, lista) })
+      } catch (err) {
+        aviso = `La convocatoria se ha guardado, pero no se pudo enviar la lista al grupo: ${err.message}`
+      }
+    }
+
+    // Ya cerrada: construirConvocatoria lee de call_ups, sin volver a Whapi.
+    const final = await getMatchdayById(matchdayId)
+    res.json({ ...(await construirConvocatoria(final)), ...(aviso ? { aviso } : {}) })
+  } catch (err) {
+    responderError(res, err)
+  }
+})
+
+// Vuelve a abrir la inscripción sin borrar call_ups: al volver a abrir el
+// panel se propone lo que ya había guardado el entrenador. No se permite con
+// el partido jugado (ahí se edita directamente la convocatoria cerrada).
+// Responde solo el estado nuevo: el panel vuelve a pedir el GET, y así un
+// fallo de Whapi al leer votos no se confunde con un fallo al reabrir.
+app.put('/api/matchdays/:id/convocatoria/reabrir', requireEntrenador(), async (req, res) => {
+  try {
+    const matchdayId = matchdayIdDeParams(req)
+    const m = await getMatchdayById(matchdayId)
+    if (!m) throw errorHttp(404, 'NO_ENCONTRADA', 'Jornada no encontrada.')
+    if (m.callup_status !== 'cerrada') throw errorHttp(409, 'NO_CERRADA', 'La convocatoria no está cerrada.')
+    if (m.status === 'played') {
+      throw errorHttp(409, 'PARTIDO_JUGADO', 'El partido ya está jugado: edita la convocatoria en lugar de reabrirla.')
+    }
+    const { error } = await supabase
+      .from('matchdays')
+      .update({ callup_status: 'inscripcion', callup_closed_at: null, callup_closed_by: null })
+      .eq('id', matchdayId)
+    if (error) throw new Error(error.message)
+    res.json({ matchId: matchdayId, status: 'inscripcion' })
+  } catch (err) {
+    responderError(res, err)
   }
 })
 
@@ -1151,28 +1388,33 @@ app.get('/api/next-match/auto', async (req, res) => {
 
 // Marca un partido como jugado, para que /api/next-match/auto avance al
 // siguiente y el banner de "próximo partido" deje de mostrar uno que el
-// entrenador ya ha dado por disputado. También archiva los votos de su
-// encuesta en call_ups (igual que hace PUT /api/next-match al cambiar de
-// partido activo) porque marcar como jugado es la otra forma de que un
-// partido deje de estar "vivo" y, sin este archivado, MatchStatsPanel se
-// queda sin convocados con los que anotar estadísticas (ver matchday_id=103).
+// entrenador ya ha dado por disputado. Ya no copia votos a call_ups: los
+// convocados salen de la convocatoria final. Por eso exige que esté
+// cerrada (409 CONVOCATORIA_NO_CERRADA), salvo con { forzar: true } en el
+// body — entonces el partido queda jugado sin convocados hasta que el
+// entrenador guarde su convocatoria final.
 app.put('/api/calendario/:matchId/jugado', requireEntrenador(), async (req, res) => {
   const matchId = Number(req.params.matchId)
-  const { data, error } = await supabase
-    .from('matchdays')
-    .update({ status: 'played' })
-    .eq('id', matchId)
-    .select('id, jornada_number, match_date, opponent_club_id, is_home, status, whatsapp_poll_id')
-    .maybeSingle()
-  if (error) return res.status(500).json({ error: error.message })
-  if (!data) return res.status(404).json({ error: 'Partido no encontrado en el calendario.' })
   try {
-    if (data.whatsapp_poll_id || isMockVotesActive()) {
-      await archivarVotos(data.id, data.whatsapp_poll_id)
+    const actual = await getMatchdayById(matchId)
+    if (!actual) return res.status(404).json({ error: 'Partido no encontrado en el calendario.' })
+    if (actual.callup_status !== 'cerrada' && req.body?.forzar !== true) {
+      return res.status(409).json({
+        error: 'La convocatoria final de este partido no está cerrada.',
+        code: 'CONVOCATORIA_NO_CERRADA',
+      })
     }
+    const { data, error } = await supabase
+      .from('matchdays')
+      .update({ status: 'played' })
+      .eq('id', matchId)
+      .select('id, jornada_number, match_date, opponent_club_id, is_home, status')
+      .maybeSingle()
+    if (error) throw new Error(error.message)
+    if (!data) return res.status(404).json({ error: 'Partido no encontrado en el calendario.' })
     res.json(reconstruirPartidoCalendario(data, await getClubNameById()))
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(err.status || 500).json({ error: err.message, code: err.code })
   }
 })
 
@@ -1222,12 +1464,15 @@ app.get('/api/convocatoria-por-fecha', async (req, res) => {
       .maybeSingle()
     if (error) throw new Error(error.message)
     const pollId = m?.whatsapp_poll_id
-    // Ver comentario equivalente en GET /api/next-match/poll.
+    // Ver comentario equivalente en GET /api/next-match/poll. hasPoll dice si
+    // la jornada tiene encuesta real (pollConfigured también es true con el
+    // mock activo); lo usa PlantillaScreen para "Generar"/"Regenerar".
+    const hasPoll = Boolean(pollId)
     if (!pollId && !isMockVotesActive()) {
-      return res.json({ pollConfigured: false, votes: {} })
+      return res.json({ pollConfigured: false, hasPoll, votes: {} })
     }
     const votes = await fetchPollVotes(pollId)
-    res.json({ pollConfigured: true, votes })
+    res.json({ pollConfigured: true, hasPoll, votes })
   } catch (err) {
     res.status(502).json({ error: err.message })
   }
