@@ -44,6 +44,9 @@ export default function StatsScreen({
   const [matchesError, setMatchesError] = useState('')
   const [calledPlayerIds, setCalledPlayerIds] = useState(null)
   const [calledError, setCalledError] = useState('')
+  // Si la convocatoria final del partido elegido está cerrada (sin ella no se
+  // puede valorar). null mientras se consulta.
+  const [convocatoriaCerrada, setConvocatoriaCerrada] = useState(null)
 
   // El historial de jornadas (calendario + resultados) ya no es exclusivo
   // del entrenador: /api/calendario, /api/club y /api/estadisticas-personales
@@ -92,11 +95,16 @@ export default function StatsScreen({
     if (!matchIdParaConvocados) return
     setCalledPlayerIds(null)
     setCalledError('')
+    setConvocatoriaCerrada(null)
     fetchAsistentesConvocatoria(matchIdParaConvocados)
-      .then((res) => setCalledPlayerIds(new Set(res.playerIds)))
+      .then((res) => {
+        setCalledPlayerIds(new Set(res.playerIds))
+        setConvocatoriaCerrada(!!res.cerrada)
+      })
       .catch((err) => {
         setCalledError(err.message)
         setCalledPlayerIds(new Set())
+        setConvocatoriaCerrada(false)
       })
   }, [matchIdParaConvocados])
 
@@ -114,7 +122,7 @@ export default function StatsScreen({
   // de anotar estadísticas individuales para ese partido.
   function marcarPartidoComoJugado(partido) {
     if (!currentUser?.id) return
-    return marcarJugadoConConfirmacion(partido.id, currentUser.id)
+    return marcarJugadoConConfirmacion(partido.id)
       .then((marcado) => (marcado ? fetchCalendario() : null))
       .then((cal) => {
         if (!cal) return
@@ -147,7 +155,7 @@ export default function StatsScreen({
   // ningún sheet nuevo — cierra los que hubiera abiertos para ese partido.
   function desmarcarPartidoComoJugado(partido) {
     if (!currentUser?.id) return
-    return unmarkMatchAsPlayed(partido.id, currentUser.id)
+    return unmarkMatchAsPlayed(partido.id)
       .then(() => fetchCalendario())
       .then((cal) => {
         setCalendario(cal)
@@ -274,6 +282,7 @@ export default function StatsScreen({
             currentUser={currentUser}
             matchId={selectedMatch.id}
             jugado={!!selectedMatch.jugado}
+            convocatoriaCerrada={convocatoriaCerrada}
             jornada={selectedMatch.jornada}
             rival={rivalDelPartidoSeleccionado}
             estadisticasPersonales={estadisticasPersonales}

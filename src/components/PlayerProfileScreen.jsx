@@ -491,7 +491,7 @@ function InformacionTabEditable({ playerId, currentUserId, initial, positions, o
     setErrorFoto('')
     try {
       const photoBase64 = await leerArchivoComoBase64(file)
-      await uploadPlayerPhoto(playerId, { photoBase64, contentType: file.type }, currentUserId)
+      await uploadPlayerPhoto(playerId, { photoBase64, contentType: file.type })
     } catch (err) {
       setErrorFoto(err.message)
     } finally {
@@ -523,8 +523,7 @@ function InformacionTabEditable({ playerId, currentUserId, initial, positions, o
     try {
       await updatePlayerProfile(
         playerId,
-        { name: nombre, birthDate: fechaNacimiento || null, positionCode: posicion, phone: telefono },
-        currentUserId
+        { name: nombre, birthDate: fechaNacimiento || null, positionCode: posicion, phone: telefono }
       )
       if (cambiandoPassword) {
         await changePassword(currentUserId, { currentPassword: passwordActual, newPassword: nuevaPassword })

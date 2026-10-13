@@ -35,7 +35,7 @@ export default function MatchResultPanel({ matchId, rival, currentUser, resultad
     setSaving(true)
     setError('')
     try {
-      await saveResultadoPartido(matchId, borrador, currentUser.id)
+      await saveResultadoPartido(matchId, borrador)
       await onSaved?.()
     } catch (err) {
       setError(err.message)

@@ -9,12 +9,14 @@ import PlayerAvatar from './PlayerAvatar'
  * `rating` es la media de los 4 atributos valorables (esfuerzo, equipo,
  * liderazgo, impacto) — null si el jugador aún no tiene votos.
  *
- * De dónde sale cada dato en la BBDD:
- *   goals / assists  -> season_player_stats.total_goals / total_assists
- *   attendancePct    -> season_call_up_attendance.attendance_pct
- *   mvps             -> COUNT sobre match_mvp_votes agrupado por ganador de cada partido
- *   rating           -> (avg_impacto + avg_esfuerzo + avg_equipo + avg_liderazgo) / 4
- *                       de season_player_stats
+ * De dónde sale cada dato en la BBDD (GET /api/stats/ranking, solo jornadas
+ * jugadas):
+ *   goals / assists  -> suma de player_match_stats
+ *   attendancePct    -> call_ups.called / jornadas jugadas por el equipo
+ *   mvps             -> partidos en los que fue el más votado en match_mvp_votes
+ *                       (con empate en cabeza no hay MVP)
+ *   rating           -> media de los criterios de player_ratings (promediarVotos
+ *                       en server/index.js, la misma que el perfil)
  */
 
 const C = {

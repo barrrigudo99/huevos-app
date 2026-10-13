@@ -74,7 +74,7 @@ export default function RatingPanel({ matchId, playersToRate, currentUser, jorna
     }
     setLoading(true)
     setLoadError('')
-    fetchPlayerRatings(matchId, currentUser.id)
+    fetchPlayerRatings(matchId)
       .then((res) => {
         setAssign(assignFromRatings(res.ratings, playersToRate))
         setMvpId(res.mvpPlayerId ?? null)
@@ -149,11 +149,7 @@ export default function RatingPanel({ matchId, playersToRate, currentUser, jorna
         })
         return row
       })
-      const res = await savePlayerRatings(
-        matchId,
-        { ratings: lista, mvpPlayerId: mvpId },
-        currentUser.id
-      )
+      const res = await savePlayerRatings(matchId, { ratings: lista, mvpPlayerId: mvpId })
       setAssign(assignFromRatings(res.ratings, playersToRate))
       setMvpId(res.mvpPlayerId ?? null)
       setUndo([])

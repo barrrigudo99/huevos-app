@@ -345,8 +345,7 @@ export default function PlantillaScreen({
           number: Number(form.number) || 0,
           phone: form.phone,
           birthDate: form.birthDate,
-        },
-        currentUser.id
+        }
       )
       setPlayers((prev) => [...prev, player])
       setForm({ name: '', positions: [], number: '', phone: '', birthDate: '' })
@@ -367,7 +366,7 @@ export default function PlantillaScreen({
       // en NextMatchCard (partidoMostrado), se manda también su matchId
       // para que el backend identifique la jornada directamente en vez de
       // comparar rival/fecha por texto (ver server/index.js, PUT /api/next-match).
-      const match = await updateNextMatch({ ...matchForm, matchId: partidoMostrado?.matchId }, currentUser.id)
+      const match = await updateNextMatch({ ...matchForm, matchId: partidoMostrado?.matchId })
       setNextMatch(match)
       setShowMatchForm(false)
     } catch (err) {
@@ -389,14 +388,14 @@ export default function PlantillaScreen({
     try {
       let match
       try {
-        match = await generarInscripcion(matchId, currentUser.id)
+        match = await generarInscripcion(matchId)
       } catch (err) {
         if (err.code !== 'POLL_EXISTS') throw err
         const confirmado = window.confirm(
           'Ya hay una encuesta para esta jornada. Si generas otra, los votos de la anterior dejarán de verse. ¿Continuar?'
         )
         if (!confirmado) return
-        match = await generarInscripcion(matchId, currentUser.id, { confirmarReemplazo: true })
+        match = await generarInscripcion(matchId, { confirmarReemplazo: true })
       }
       if (match?.matchId === nextMatch?.matchId) {
         setNextMatch((prev) => ({ ...prev, whatsappPollId: match.whatsappPollId }))
@@ -445,6 +444,11 @@ export default function PlantillaScreen({
             currentUser={currentUser}
             matchId={partidoMostrado?.matchId}
             jugado={!!partidoMostrado?.jugado}
+            convocatoriaCerrada={
+              convocatoriaFinalLoading
+                ? null
+                : convocatoriaFinal?.matchId === partidoMostrado?.matchId && convocatoriaFinal?.status === 'cerrada'
+            }
             jornada={partidoMostrado?.jornada}
             rival={partidoMostrado?.rival}
             estadisticasPersonales={estadisticasPersonales}

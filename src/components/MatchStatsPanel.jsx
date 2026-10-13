@@ -68,7 +68,7 @@ export default function MatchStatsPanel({ matchId, players, currentUser, jugador
     setMarking(true)
     setMarkError('')
     try {
-      const marcado = await marcarJugadoConConfirmacion(matchId, currentUser.id)
+      const marcado = await marcarJugadoConConfirmacion(matchId)
       if (marcado) onMarked?.()
     } catch (err) {
       setMarkError(err.message)
@@ -117,7 +117,7 @@ export default function MatchStatsPanel({ matchId, players, currentUser, jugador
         })
         .filter(Boolean)
 
-      await saveEstadisticasPersonalesPartido(matchId, jugadoresAGuardar, currentUser.id)
+      await saveEstadisticasPersonalesPartido(matchId, jugadoresAGuardar)
       await onSaved?.()
     } catch (err) {
       setError(err.message)

@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import { createClient } from '@supabase/supabase-js'
 import bcrypt from 'bcryptjs'
+import crypto from 'node:crypto'
 import ws from 'ws'
 import {
   createPollMessage,
@@ -22,6 +23,64 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
   auth: { persistSession: false },
   realtime: { transport: ws },
 })
+
+// Sesión: /api/login y /api/register devuelven un token firmado con HMAC
+// (SESSION_SECRET) que el frontend manda en "Authorization: Bearer <token>".
+// Sustituye a la antigua cabecera X-User-Id, que cualquiera podía rellenar
+// con el id de otro usuario. Formato: base64url({uid, exp}).firma.
+const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000
+const SESSION_SECRET =
+  process.env.SESSION_SECRET ||
+  (() => {
+    console.warn(
+      'Falta SESSION_SECRET: se usa uno aleatorio y las sesiones se pierden al reiniciar el servidor.'
+    )
+    return crypto.randomBytes(32).toString('hex')
+  })()
+
+function firmarSesion(payload) {
+  return crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url')
+}
+
+function crearTokenSesion(userId) {
+  const payload = Buffer.from(JSON.stringify({ uid: userId, exp: Date.now() + SESSION_TTL_MS })).toString('base64url')
+  return `${payload}.${firmarSesion(payload)}`
+}
+
+// Id del usuario de la sesión, o null si no hay token, la firma no cuadra o
+// ha caducado.
+function userIdDeSesion(req) {
+  const match = /^Bearer (.+)$/.exec(req.get('Authorization') || '')
+  if (!match) return null
+  const [payload, firma] = match[1].split('.')
+  if (!payload || !firma) return null
+  const esperada = Buffer.from(firmarSesion(payload))
+  const recibida = Buffer.from(firma)
+  if (esperada.length !== recibida.length || !crypto.timingSafeEqual(esperada, recibida)) return null
+  try {
+    const { uid, exp } = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'))
+    return Number.isInteger(uid) && exp > Date.now() ? uid : null
+  } catch {
+    return null
+  }
+}
+
+// Usuario de la sesión ({ id, role, player_id }) o null.
+async function getSessionUser(req) {
+  const userId = userIdDeSesion(req)
+  if (!userId) return null
+  const { data, error } = await supabase.from('users').select('id, role, player_id').eq('id', userId).maybeSingle()
+  if (error) throw new Error(error.message)
+  return data || null
+}
+
+// code 'SESION_INVALIDA' le dice al frontend que cierre la sesión y vuelva
+// al login (un 401 de contraseña incorrecta no lleva este code).
+function responderSinSesion(res) {
+  return res
+    .status(401)
+    .json({ error: 'Tu sesión no es válida o ha caducado. Vuelve a iniciar sesión.', code: 'SESION_INVALIDA' })
+}
 
 const app = express()
 
@@ -80,22 +139,19 @@ function normalizePhone(phone) {
   return digits || null
 }
 
-// Requiere que la petición identifique (cabecera X-User-Id) a un usuario
-// existente con rol "entrenador". No hay tokens/sesión en esta app todavía,
-// así que esto es la validación de rol server-side pedida en la Tarea 1:
-// evita que la acción se ejecute aunque se llame directamente al endpoint
-// saltándose el botón (con un id de jugador, o sin cabecera, se rechaza).
+// Requiere una sesión válida de un usuario con rol "entrenador": evita que
+// la acción se ejecute aunque se llame directamente al endpoint saltándose
+// el botón.
 function requireEntrenador() {
   return async (req, res, next) => {
-    const userId = Number(req.get('X-User-Id'))
-    if (!userId) {
-      return res.status(401).json({ error: 'Falta identificar al usuario (X-User-Id).' })
+    let user
+    try {
+      user = await getSessionUser(req)
+    } catch (err) {
+      return res.status(500).json({ error: err.message })
     }
-    const { data: user, error } = await supabase.from('users').select('id, role').eq('id', userId).maybeSingle()
-    if (error) {
-      return res.status(500).json({ error: error.message })
-    }
-    if (!user || user.role !== 'entrenador') {
+    if (!user) return responderSinSesion(res)
+    if (user.role !== 'entrenador') {
       return res.status(403).json({ error: 'Solo un entrenador puede realizar esta acción.' })
     }
     req.currentUser = user
@@ -109,10 +165,13 @@ function requireEntrenador() {
 function requireSelfOrEntrenador() {
   return async (req, res, next) => {
     const playerId = Number(req.params.id)
-    const user = await getUserByHeader(req)
-    if (!user) {
-      return res.status(401).json({ error: 'Falta identificar al usuario (X-User-Id).' })
+    let user
+    try {
+      user = await getSessionUser(req)
+    } catch (err) {
+      return res.status(500).json({ error: err.message })
     }
+    if (!user) return responderSinSesion(res)
     if (user.role !== 'entrenador' && user.player_id !== playerId) {
       return res.status(403).json({ error: 'Solo puedes editar tu propio perfil.' })
     }
@@ -221,12 +280,6 @@ app.post('/api/players', requireEntrenador(), async (req, res) => {
   })
 })
 
-async function getSeasonMatchdayIds(seasonId) {
-  const { data, error } = await supabase.from('matchdays').select('id').eq('season_id', seasonId)
-  if (error) throw new Error(error.message)
-  return data.map((m) => m.id)
-}
-
 // Jornadas de la temporada que el equipo YA ha jugado (matchdays.status =
 // 'played'). Es el denominador del % de asistencia a convocatorias: ese
 // porcentaje se mide siempre contra las jornadas jugadas por el EQUIPO, no
@@ -260,16 +313,61 @@ async function contarAsistenciasPorJugador(matchdayIds) {
   return porJugador
 }
 
-// Cuenta, para cada jugador, en cuántos partidos de `matchdayIds` fue el más
-// votado en match_mvp_votes. Si dos o más jugadores empatan a más votos en un
-// partido, ese partido no cuenta como MVP para nadie (decisión de producto: no
-// hay un criterio de desempate no arbitrario entre compañeros). Devuelve un
-// Map player_id -> número de MVPs.
+// ---- Valoraciones y MVP: una sola forma de calcularlos ----
+// La usan el perfil, el historial de notas y el ranking, para que un mismo
+// jugador tenga la misma nota y los mismos MVPs en todas las pantallas.
+
+const CRITERIOS_RATING = ['impacto', 'esfuerzo', 'equipo', 'liderazgo']
+
+const media = (valores) => valores.reduce((s, v) => s + v, 0) / valores.length
+const redondear2 = (x) => (x == null ? null : Math.round(x * 100) / 100)
+
+// Media de un conjunto de votos de player_ratings. Cada criterio se promedia
+// sobre los votos que lo puntuaron (un NULL no cuenta como 0) y la nota es la
+// media de los criterios que tienen valor. Todo null si no hay votos.
+function promediarVotos(votos) {
+  const resultado = { votos: votos.length }
+  const mediasCriterio = []
+  for (const c of CRITERIOS_RATING) {
+    const valores = votos.map((v) => v[c]).filter((v) => v != null)
+    resultado[c] = valores.length > 0 ? media(valores) : null
+    if (resultado[c] != null) mediasCriterio.push(resultado[c])
+  }
+  resultado.nota = mediasCriterio.length > 0 ? media(mediasCriterio) : null
+  return resultado
+}
+
+// MVP de un partido a partir de sus votos ([{ player_id }]): el más votado.
+// Si dos o más empatan en cabeza no hay MVP (decisión de producto: no hay un
+// criterio de desempate no arbitrario entre compañeros).
+function mvpDelPartido(votos) {
+  const porJugador = new Map()
+  for (const v of votos) porJugador.set(v.player_id, (porJugador.get(v.player_id) || 0) + 1)
+  let max = 0
+  let ganadores = []
+  for (const [pid, n] of porJugador) {
+    if (n > max) {
+      max = n
+      ganadores = [pid]
+    } else if (n === max) {
+      ganadores.push(pid)
+    }
+  }
+  return ganadores.length === 1 ? ganadores[0] : null
+}
+
+// ids de `matches` de un conjunto de jornadas.
+async function getMatchIdsDeJornadas(matchdayIds) {
+  if (matchdayIds.length === 0) return []
+  const { data, error } = await supabase.from('matches').select('id').in('matchday_id', matchdayIds)
+  if (error) throw new Error(error.message)
+  return data.map((m) => m.id)
+}
+
+// Cuenta, para cada jugador, en cuántos partidos de `matchdayIds` fue MVP
+// (ver mvpDelPartido). Devuelve un Map player_id -> número de MVPs.
 async function contarMvpsPorJugador(matchdayIds) {
-  if (matchdayIds.length === 0) return new Map()
-  const { data: matches, error: matchesErr } = await supabase.from('matches').select('id').in('matchday_id', matchdayIds)
-  if (matchesErr) throw new Error(matchesErr.message)
-  const matchIds = matches.map((m) => m.id)
+  const matchIds = await getMatchIdsDeJornadas(matchdayIds)
   if (matchIds.length === 0) return new Map()
 
   const { data: votos, error: votosErr } = await supabase
@@ -280,38 +378,66 @@ async function contarMvpsPorJugador(matchdayIds) {
 
   const votosPorMatch = new Map()
   for (const v of votos) {
-    if (!votosPorMatch.has(v.match_id)) votosPorMatch.set(v.match_id, new Map())
-    const porJugador = votosPorMatch.get(v.match_id)
-    porJugador.set(v.player_id, (porJugador.get(v.player_id) || 0) + 1)
+    if (!votosPorMatch.has(v.match_id)) votosPorMatch.set(v.match_id, [])
+    votosPorMatch.get(v.match_id).push(v)
   }
 
   const mvpsPorJugador = new Map()
-  for (const porJugador of votosPorMatch.values()) {
-    let max = 0
-    let ganadores = []
-    for (const [pid, n] of porJugador) {
-      if (n > max) {
-        max = n
-        ganadores = [pid]
-      } else if (n === max) {
-        ganadores.push(pid)
-      }
-    }
-    if (ganadores.length === 1) {
-      mvpsPorJugador.set(ganadores[0], (mvpsPorJugador.get(ganadores[0]) || 0) + 1)
-    }
+  for (const votosPartido of votosPorMatch.values()) {
+    const mvp = mvpDelPartido(votosPartido)
+    if (mvp != null) mvpsPorJugador.set(mvp, (mvpsPorJugador.get(mvp) || 0) + 1)
   }
   return mvpsPorJugador
 }
 
-// MVPs ganados por un solo jugador en `matchdayIds` (ver contarMvpsPorJugador).
-async function contarMvpsGanados(matchdayIds, playerId) {
-  return (await contarMvpsPorJugador(matchdayIds)).get(playerId) || 0
+// Totales de temporada por jugador en las jornadas `playedMatchdayIds`:
+// goles, asistencias y tarjetas (player_match_stats) y la media de sus
+// valoraciones (promediarVotos). Sustituye a la vista season_player_stats,
+// que multiplicaba los goles por el número de valoraciones y no mostraba las
+// valoraciones de quien no tenía estadísticas. Map player_id -> totales.
+async function statsTemporadaPorJugador(playedMatchdayIds) {
+  const porJugador = new Map()
+  const matchIds = await getMatchIdsDeJornadas(playedMatchdayIds)
+  if (matchIds.length === 0) return porJugador
+
+  const [pmsRes, ratingsRes] = await Promise.all([
+    supabase
+      .from('player_match_stats')
+      .select('player_id, goals, assists, yellow_cards, red_cards')
+      .in('match_id', matchIds),
+    supabase
+      .from('player_ratings')
+      .select('player_id, impacto, esfuerzo, equipo, liderazgo')
+      .in('match_id', matchIds),
+  ])
+  if (pmsRes.error) throw new Error(pmsRes.error.message)
+  if (ratingsRes.error) throw new Error(ratingsRes.error.message)
+
+  const de = (playerId) => {
+    if (!porJugador.has(playerId)) {
+      porJugador.set(playerId, { goals: 0, assists: 0, yellowCards: 0, redCards: 0, votos: [] })
+    }
+    return porJugador.get(playerId)
+  }
+  for (const r of pmsRes.data) {
+    const t = de(r.player_id)
+    t.goals += r.goals || 0
+    t.assists += r.assists || 0
+    t.yellowCards += r.yellow_cards || 0
+    t.redCards += r.red_cards || 0
+  }
+  for (const r of ratingsRes.data) de(r.player_id).votos.push(r)
+  for (const t of porJugador.values()) {
+    t.ratings = promediarVotos(t.votos)
+    delete t.votos
+  }
+  return porJugador
 }
 
 // Ficha completa de un jugador para PlayerProfileScreen: datos personales +
-// stats de la temporada activa (vista season_player_stats), % asistencia a
-// convocatorias (call_ups) y MVPs recibidos. Solo lectura, cualquiera
+// stats de las jornadas jugadas de la temporada activa
+// (statsTemporadaPorJugador), % asistencia a convocatorias (call_ups) y MVPs
+// recibidos. Solo lectura, cualquiera
 // logueado puede consultar la de un compañero (se usa también al pinchar un
 // jugador desde Plantilla).
 app.get('/api/players/:id/profile', async (req, res) => {
@@ -332,33 +458,23 @@ app.get('/api/players/:id/profile', async (req, res) => {
       ? (await supabase.from('positions').select('name, short_code').eq('id', player.position_id).maybeSingle()).data
       : null
 
-    const [matchdayIds, playedMatchdayIds] = await Promise.all([
-      getSeasonMatchdayIds(season.id),
-      getPlayedMatchdayIds(season.id),
-    ])
+    const playedMatchdayIds = await getPlayedMatchdayIds(season.id)
 
-    const [{ data: statsRow, error: statsErr }, asistenciasPorJugador] = await Promise.all([
-      supabase
-        .from('season_player_stats')
-        .select(
-          'matches_played, total_goals, total_assists, total_yellow_cards, total_red_cards, avg_esfuerzo, avg_equipo, avg_liderazgo, avg_impacto'
-        )
-        .eq('player_id', playerId)
-        .eq('season_id', season.id)
-        .maybeSingle(),
+    const [statsPorJugador, asistenciasPorJugador, mvpsPorJugador] = await Promise.all([
+      statsTemporadaPorJugador(playedMatchdayIds),
       contarAsistenciasPorJugador(playedMatchdayIds),
+      contarMvpsPorJugador(playedMatchdayIds),
     ])
-    if (statsErr) throw new Error(statsErr.message)
+    const stats = statsPorJugador.get(playerId)
+    const asistencias = asistenciasPorJugador.get(playerId) || 0
 
     // % sobre las jornadas jugadas por el equipo: null solo mientras el equipo
     // no ha jugado ninguna; en cuanto hay partidos, un jugador que no asistió a
     // ninguno es 0 %, no "sin datos".
     const attendancePct =
       playedMatchdayIds.length > 0
-        ? Math.round(((asistenciasPorJugador.get(playerId) || 0) / playedMatchdayIds.length) * 100)
+        ? Math.round((asistencias / playedMatchdayIds.length) * 100)
         : null
-
-    const mvpsRecibidos = await contarMvpsGanados(matchdayIds, playerId)
 
     res.json({
       id: player.id,
@@ -369,17 +485,19 @@ app.get('/api/players/:id/profile', async (req, res) => {
       phone: player.phone,
       photo: player.photo_url,
       stats: {
-        matchesPlayed: statsRow?.matches_played ?? 0,
-        goals: statsRow?.total_goals ?? 0,
-        assists: statsRow?.total_assists ?? 0,
-        yellowCards: statsRow?.total_yellow_cards ?? 0,
-        redCards: statsRow?.total_red_cards ?? 0,
-        avgEsfuerzo: statsRow?.avg_esfuerzo ?? null,
-        avgEquipo: statsRow?.avg_equipo ?? null,
-        avgLiderazgo: statsRow?.avg_liderazgo ?? null,
-        avgImpacto: statsRow?.avg_impacto ?? null,
+        // Partidos jugados = jornadas jugadas en las que fue convocado (antes
+        // solo contaba las que tenían gol, asistencia o tarjeta).
+        matchesPlayed: asistencias,
+        goals: stats?.goals ?? 0,
+        assists: stats?.assists ?? 0,
+        yellowCards: stats?.yellowCards ?? 0,
+        redCards: stats?.redCards ?? 0,
+        avgEsfuerzo: redondear2(stats?.ratings.esfuerzo ?? null),
+        avgEquipo: redondear2(stats?.ratings.equipo ?? null),
+        avgLiderazgo: redondear2(stats?.ratings.liderazgo ?? null),
+        avgImpacto: redondear2(stats?.ratings.impacto ?? null),
         attendancePct,
-        mvpsRecibidos,
+        mvpsRecibidos: mvpsPorJugador.get(playerId) || 0,
       },
     })
   } catch (err) {
@@ -390,12 +508,11 @@ app.get('/api/players/:id/profile', async (req, res) => {
 // Histórico de notas por jornada + últimos 8 partidos con nota, para las
 // secciones "Evolución por jornada" y "Últimos partidos" del perfil.
 //
-// player_ratings NO tiene columna `score`: la nota de un voto es la media de
-// (impacto + esfuerzo + equipo + liderazgo) / 4, y puede haber varios
-// votantes por partido y jugador, así que primero se promedia por (partido,
-// jugador) y luego se agrega. `teamRating` incluye al propio jugador en la
-// media del equipo (si algún día se quiere "el resto del equipo", filtrar
-// player_id <> playerId en la media de `all`).
+// Solo jornadas jugadas. La nota de un jugador en un partido sale de
+// promediarVotos sobre todos los votos que recibió en ese partido (la misma
+// regla que el perfil y el ranking). `teamRating` incluye al propio jugador
+// en la media del equipo (si algún día se quiere "el resto del equipo",
+// filtrar player_id <> playerId en la media de `all`).
 app.get('/api/players/:id/ratings-history', async (req, res) => {
   const playerId = Number(req.params.id)
   try {
@@ -405,6 +522,7 @@ app.get('/api/players/:id/ratings-history', async (req, res) => {
       .from('matchdays')
       .select('id, jornada_number, match_date, opponent_club_id, is_home')
       .eq('season_id', season.id)
+      .eq('status', 'played')
     if (mdErr) throw new Error(mdErr.message)
     const matchdayById = new Map(mdRows.map((m) => [m.id, m]))
     const seasonMatchdayIds = mdRows.map((m) => m.id)
@@ -419,32 +537,29 @@ app.get('/api/players/:id/ratings-history', async (req, res) => {
     const matchIds = matchRows.map((m) => m.id)
     if (matchIds.length === 0) return res.json({ evolution: [], lastMatches: [] })
 
-    // player_ratings -> nota media por (match, player) (varios votantes).
+    // player_ratings -> nota por (match, player) con promediarVotos.
     const { data: ratingRows, error: ratErr } = await supabase
       .from('player_ratings')
       .select('match_id, player_id, impacto, esfuerzo, equipo, liderazgo')
       .in('match_id', matchIds)
-      .not('impacto', 'is', null)
     if (ratErr) throw new Error(ratErr.message)
 
-    const votos = new Map() // `${match}|${player}` -> { sum, n }
+    const votosPorPartido = new Map() // match_id -> Map(player_id -> [votos])
     for (const r of ratingRows) {
-      const nota = (r.impacto + r.esfuerzo + r.equipo + r.liderazgo) / 4
-      const k = `${r.match_id}|${r.player_id}`
-      const acc = votos.get(k) || { sum: 0, n: 0 }
-      acc.sum += nota
-      acc.n += 1
-      votos.set(k, acc)
+      if (!votosPorPartido.has(r.match_id)) votosPorPartido.set(r.match_id, new Map())
+      const porJugador = votosPorPartido.get(r.match_id)
+      if (!porJugador.has(r.player_id)) porJugador.set(r.player_id, [])
+      porJugador.get(r.player_id).push(r)
     }
-    const notaPorPartido = new Map() // match_id -> Map(player_id -> nota media)
-    for (const [k, acc] of votos) {
-      const [mid, pid] = k.split('|').map(Number)
-      if (!notaPorPartido.has(mid)) notaPorPartido.set(mid, new Map())
-      notaPorPartido.get(mid).set(pid, acc.sum / acc.n)
+    const notaPorPartido = new Map() // match_id -> Map(player_id -> nota)
+    for (const [mid, porJugador] of votosPorPartido) {
+      const notas = new Map()
+      for (const [pid, votos] of porJugador) {
+        const { nota } = promediarVotos(votos)
+        if (nota != null) notas.set(pid, nota)
+      }
+      notaPorPartido.set(mid, notas)
     }
-
-    const round2 = (x) => Math.round(x * 100) / 100
-    const mean = (arr) => arr.reduce((s, v) => s + v, 0) / arr.length
 
     // §1 evolución: agrupar por (jornada, fecha); HAVING el jugador tiene nota.
     const grupos = new Map()
@@ -464,43 +579,44 @@ app.get('/api/players/:id/ratings-history', async (req, res) => {
       .map((g) => ({
         matchday: g.matchday,
         date: g.date,
-        rating: round2(mean(g.player)),
-        teamRating: round2(mean(g.all)),
+        rating: redondear2(media(g.player)),
+        teamRating: redondear2(media(g.all)),
       }))
       .sort((a, b) => a.matchday - b.matchday)
 
-    // §2 últimos partidos: solo aquellos con player_match_stats del jugador.
-    const { data: pmsRows, error: pmsErr } = await supabase
-      .from('player_match_stats')
-      .select('match_id, goals, assists, yellow_cards, red_cards')
-      .eq('player_id', playerId)
-      .in('match_id', matchIds)
+    // §2 últimos partidos: los que jugó (convocado), más cualquiera en el que
+    // tenga estadísticas o nota. Antes solo salían los que tenían
+    // player_match_stats, es decir, con gol, asistencia o tarjeta.
+    const [{ data: pmsRows, error: pmsErr }, { data: calledRows, error: calledErr }] = await Promise.all([
+      supabase
+        .from('player_match_stats')
+        .select('match_id, goals, assists, yellow_cards, red_cards')
+        .eq('player_id', playerId)
+        .in('match_id', matchIds),
+      supabase
+        .from('call_ups')
+        .select('matchday_id')
+        .eq('player_id', playerId)
+        .eq('called', true)
+        .in('matchday_id', seasonMatchdayIds),
+    ])
     if (pmsErr) throw new Error(pmsErr.message)
+    if (calledErr) throw new Error(calledErr.message)
     const pmsByMatch = new Map(pmsRows.map((r) => [r.match_id, r]))
+    const jornadasConvocado = new Set(calledRows.map((r) => r.matchday_id))
 
     const { data: mvpRows, error: mvpErr } = await supabase
       .from('match_mvp_votes')
       .select('match_id, player_id')
       .in('match_id', matchIds)
     if (mvpErr) throw new Error(mvpErr.message)
-    const mvpCounts = new Map()
+    const mvpVotosPorMatch = new Map()
     for (const v of mvpRows) {
-      if (!mvpCounts.has(v.match_id)) mvpCounts.set(v.match_id, new Map())
-      const c = mvpCounts.get(v.match_id)
-      c.set(v.player_id, (c.get(v.player_id) || 0) + 1)
+      if (!mvpVotosPorMatch.has(v.match_id)) mvpVotosPorMatch.set(v.match_id, [])
+      mvpVotosPorMatch.get(v.match_id).push(v)
     }
     const mvpByMatch = new Map()
-    for (const [mid, c] of mvpCounts) {
-      let best = null
-      let bestN = 0
-      for (const [pid, n] of c) {
-        if (n > bestN) {
-          bestN = n
-          best = pid
-        }
-      }
-      mvpByMatch.set(mid, best)
-    }
+    for (const [mid, votos] of mvpVotosPorMatch) mvpByMatch.set(mid, mvpDelPartido(votos))
 
     const clubIds = [...new Set(mdRows.map((m) => m.opponent_club_id).filter(Boolean))]
     const { data: clubRows, error: clubErr } = clubIds.length
@@ -510,7 +626,9 @@ app.get('/api/players/:id/ratings-history', async (req, res) => {
     const clubNameById = new Map(clubRows.map((c) => [c.id, c.name]))
 
     const lastMatches = matchRows
-      .filter((m) => pmsByMatch.has(m.id))
+      .filter(
+        (m) => jornadasConvocado.has(m.matchday_id) || pmsByMatch.has(m.id) || notaPorPartido.get(m.id)?.has(playerId)
+      )
       .map((m) => {
         const md = matchdayById.get(m.matchday_id)
         const pms = pmsByMatch.get(m.id) || {}
@@ -526,7 +644,7 @@ app.get('/api/players/:id/ratings-history', async (req, res) => {
           goalsFor: gf,
           goalsAgainst: ga,
           result: gf > ga ? 'W' : gf < ga ? 'L' : 'D',
-          rating: miNota != null ? round2(miNota) : null,
+          rating: redondear2(miNota),
           goals: pms.goals || 0,
           assists: pms.assists || 0,
           yellowCards: pms.yellow_cards || 0,
@@ -667,7 +785,7 @@ app.post('/api/register', async (req, res) => {
     .single()
   if (insertErr) return res.status(500).json({ error: insertErr.message })
 
-  res.status(201).json(publicUser(user))
+  res.status(201).json({ ...publicUser(user), token: crearTokenSesion(user.id) })
 })
 
 app.post('/api/login', async (req, res) => {
@@ -683,15 +801,13 @@ app.post('/api/login', async (req, res) => {
   if (!user || !bcrypt.compareSync(password, user.password_hash || '')) {
     return res.status(401).json({ error: 'Email o contraseña incorrectos.' })
   }
-  res.json(publicUser(user))
+  res.json({ ...publicUser(user), token: crearTokenSesion(user.id) })
 })
 
 // Cambia la contraseña del propio usuario. Solo el propio usuario puede
 // hacerlo (nunca un entrenador en su nombre) y hace falta acertar la
-// contraseña actual — no hay sesión/token en esta app (solo X-User-Id por
-// cabecera), así que sin esta comprobación cualquiera que supiera/adivinara
-// el id de otro usuario podría cambiarle la contraseña llamando al endpoint
-// directamente.
+// contraseña actual, aunque la sesión sea válida (por si alguien usa un
+// dispositivo con la sesión abierta).
 app.put('/api/users/:id/password', async (req, res) => {
   const userId = Number(req.params.id)
   const { currentPassword, newPassword } = req.body
@@ -701,11 +817,12 @@ app.put('/api/users/:id/password', async (req, res) => {
   if (newPassword.length < 6) {
     return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres.' })
   }
-  const requesterId = Number(req.get('X-User-Id'))
-  if (!requesterId || requesterId !== userId) {
-    return res.status(403).json({ error: 'Solo puedes cambiar tu propia contraseña.' })
-  }
   try {
+    const requester = await getSessionUser(req)
+    if (!requester) return responderSinSesion(res)
+    if (requester.id !== userId) {
+      return res.status(403).json({ error: 'Solo puedes cambiar tu propia contraseña.' })
+    }
     const { data: user, error } = await supabase
       .from('users')
       .select('id, password_hash')
@@ -981,17 +1098,18 @@ app.get('/api/convocatoria-history', async (req, res) => {
 
 // Jugadores de la convocatoria final de una jornada concreta (call_ups.called
 // = true, lo decide el entrenador). Lo usan MatchStatsPanel y la Alineación
-// de StatsScreen para listar solo a los convocados.
+// de StatsScreen para listar solo a los convocados. Devuelve también
+// cerrada (matchdays.callup_status = 'cerrada'), para desactivar "Valorar
+// partido" antes de que el POST de valoraciones responda 409.
 app.get('/api/call-ups/:matchdayId', async (req, res) => {
   const matchdayId = Number(req.params.matchdayId)
   try {
-    const { data, error } = await supabase
-      .from('call_ups')
-      .select('player_id')
-      .eq('matchday_id', matchdayId)
-      .eq('called', true)
+    const [{ data, error }, m] = await Promise.all([
+      supabase.from('call_ups').select('player_id').eq('matchday_id', matchdayId).eq('called', true),
+      getMatchdayById(matchdayId),
+    ])
     if (error) throw new Error(error.message)
-    res.json({ playerIds: data.map((row) => row.player_id) })
+    res.json({ playerIds: data.map((row) => row.player_id), cerrada: m?.callup_status === 'cerrada' })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -1229,7 +1347,7 @@ app.put('/api/matchdays/:id/convocatoria', requireEntrenador(), async (req, res)
 
     const { error: updErr } = await supabase
       .from('matchdays')
-      .update({ callup_status: 'cerrada', callup_closed_at: ahora, callup_closed_by: Number(req.get('X-User-Id')) })
+      .update({ callup_status: 'cerrada', callup_closed_at: ahora, callup_closed_by: req.currentUser.id })
       .eq('id', matchdayId)
     if (updErr) throw new Error(updErr.message)
 
@@ -1556,36 +1674,29 @@ app.get('/api/player-match-stats', async (req, res) => {
 // Ranking de toda la plantilla de una temporada (la activa por defecto, o
 // ?season=<id>) para TeamRankingCard en StatsScreen: una fila por jugador
 // activo del roster de esa temporada con goles, asistencias, % de
-// convocatorias asistidas, MVPs y valoración media (media de los 4 atributos
-// valorables; null si el jugador aún no tiene votos). Ordena por valoración
-// desc, los null al final. Solo lectura.
+// convocatorias asistidas, MVPs y valoración media (promediarVotos; null si
+// el jugador aún no tiene votos), todo sobre las jornadas ya jugadas. Ordena
+// por valoración desc, los null al final. Solo lectura.
 app.get('/api/stats/ranking', async (req, res) => {
   try {
     const season = req.query.season ? { id: Number(req.query.season) } : await getCurrentSeason()
 
-    const [rosterRes, statsRes, matchdayIds, playedMatchdayIds] = await Promise.all([
+    const [rosterRes, playedMatchdayIds] = await Promise.all([
       supabase.from('player_season_roster').select('player_id').eq('season_id', season.id),
-      supabase
-        .from('season_player_stats')
-        .select('player_id, total_goals, total_assists, avg_impacto, avg_esfuerzo, avg_equipo, avg_liderazgo')
-        .eq('season_id', season.id),
-      getSeasonMatchdayIds(season.id),
       getPlayedMatchdayIds(season.id),
     ])
     if (rosterRes.error) throw new Error(rosterRes.error.message)
-    if (statsRes.error) throw new Error(statsRes.error.message)
 
     const rosterIds = rosterRes.data.map((r) => r.player_id)
     if (rosterIds.length === 0) return res.json([])
 
-    const [{ data: players, error: playersErr }, mvpsPorJugador, asistenciasPorJugador] = await Promise.all([
+    const [{ data: players, error: playersErr }, statsById, mvpsPorJugador, asistenciasPorJugador] = await Promise.all([
       supabase.from('players').select('id, full_name, photo_url').in('id', rosterIds).eq('active', true),
-      contarMvpsPorJugador(matchdayIds),
+      statsTemporadaPorJugador(playedMatchdayIds),
+      contarMvpsPorJugador(playedMatchdayIds),
       contarAsistenciasPorJugador(playedMatchdayIds),
     ])
     if (playersErr) throw new Error(playersErr.message)
-
-    const statsById = new Map(statsRes.data.map((s) => [s.player_id, s]))
 
     // % de asistencia sobre las jornadas jugadas por el equipo (igual criterio
     // que /api/players/:id/profile). null solo si el equipo no ha jugado aún.
@@ -1596,21 +1707,15 @@ app.get('/api/stats/ranking', async (req, res) => {
 
     const rows = players.map((p) => {
       const s = statsById.get(p.id)
-      const rating =
-        s && s.avg_impacto != null
-          ? Math.round(
-              ((Number(s.avg_impacto) + Number(s.avg_esfuerzo) + Number(s.avg_equipo) + Number(s.avg_liderazgo)) / 4) * 100
-            ) / 100
-          : null
       return {
         id: p.id,
         name: p.full_name,
         photo: p.photo_url,
-        goals: Number(s?.total_goals ?? 0),
-        assists: Number(s?.total_assists ?? 0),
+        goals: s?.goals ?? 0,
+        assists: s?.assists ?? 0,
         attendancePct: attendancePctDe(p.id),
         mvps: mvpsPorJugador.get(p.id) ?? 0,
-        rating,
+        rating: redondear2(s?.ratings.nota ?? null),
       }
     })
 
@@ -1790,20 +1895,6 @@ app.put('/api/estadisticas-personales/:matchId/resultado', requireEntrenador(), 
 // voto de MVP (UNIQUE match_id, rater_user_id). :matchId es el id de
 // matchday; se resuelve/crea su fila en `matches` con el mismo helper que
 // las estadísticas.
-const CRITERIOS_RATING = ['impacto', 'esfuerzo', 'equipo', 'liderazgo']
-
-async function getUserByHeader(req) {
-  const userId = Number(req.get('X-User-Id'))
-  if (!userId) return null
-  const { data, error } = await supabase
-    .from('users')
-    .select('id, role, player_id')
-    .eq('id', userId)
-    .maybeSingle()
-  if (error) throw new Error(error.message)
-  return data || null
-}
-
 // Entero 1..5, o null si el criterio no se puntuó / no es válido.
 function criterioValido(v) {
   const n = Number(v)
@@ -1823,8 +1914,8 @@ function normalizarRatingRow(r) {
 app.get('/api/player-ratings/:matchId', async (req, res) => {
   const matchdayId = Number(req.params.matchId)
   try {
-    const user = await getUserByHeader(req)
-    if (!user) return res.status(401).json({ error: 'Falta identificar al usuario (X-User-Id).' })
+    const user = await getSessionUser(req)
+    if (!user) return responderSinSesion(res)
 
     const { data: match, error: matchErr } = await supabase
       .from('matches')
@@ -1858,11 +1949,61 @@ app.get('/api/player-ratings/:matchId', async (req, res) => {
   }
 })
 
+// Progreso de las valoraciones de una jornada: cuántos jugadores de la
+// convocatoria final (call_ups.called) han valorado ya — tienen alguna fila en
+// player_ratings o un voto de MVP, hechos con su usuario (users.player_id).
+// Respuesta: { total, hechas, pendientes: [playerId] }. El entrenador no
+// cuenta: solo se mide a los convocados.
+app.get('/api/player-ratings/:matchId/progreso', async (req, res) => {
+  const matchdayId = Number(req.params.matchId)
+  try {
+    const user = await getSessionUser(req)
+    if (!user) return responderSinSesion(res)
+
+    const [callUps, matchRes] = await Promise.all([
+      getCallUpsDeJornada(matchdayId),
+      supabase.from('matches').select('id').eq('matchday_id', matchdayId).maybeSingle(),
+    ])
+    if (matchRes.error) throw new Error(matchRes.error.message)
+    const convocados = [...callUps.values()].filter((c) => c.called).map((c) => c.player_id)
+
+    const raters = new Set()
+    if (matchRes.data) {
+      const [rowsRes, mvpRes] = await Promise.all([
+        supabase.from('player_ratings').select('rater_user_id').eq('match_id', matchRes.data.id),
+        supabase.from('match_mvp_votes').select('rater_user_id').eq('match_id', matchRes.data.id),
+      ])
+      if (rowsRes.error) throw new Error(rowsRes.error.message)
+      if (mvpRes.error) throw new Error(mvpRes.error.message)
+      for (const r of [...rowsRes.data, ...mvpRes.data]) raters.add(r.rater_user_id)
+    }
+
+    const hechasPor = new Set()
+    if (raters.size > 0) {
+      const { data, error } = await supabase.from('users').select('player_id').in('id', [...raters])
+      if (error) throw new Error(error.message)
+      for (const u of data) if (u.player_id) hechasPor.add(u.player_id)
+    }
+
+    const pendientes = convocados.filter((id) => !hechasPor.has(id))
+    res.json({ total: convocados.length, hechas: convocados.length - pendientes.length, pendientes })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // Guarda (sustituye) las valoraciones + MVP de este usuario para el partido.
 // Body: { ratings: [{ playerId, impacto, esfuerzo, equipo, liderazgo }], mvpPlayerId }.
 // Un criterio fuera de 1..5 se guarda como NULL; si un jugador queda con los
 // 4 criterios a NULL se borra su fila. Un jugador no puede valorarse ni
 // votarse MVP a sí mismo.
+// Solo se puede valorar una jornada ya jugada (409 NO_JUGADO) y con la
+// convocatoria final cerrada (409 CONVOCATORIA_NO_CERRADA), y solo a sus
+// convocados (call_ups.called): el resto de jugadores del payload se ignora.
+// Un jugador solo puede valorar si él mismo fue convocado (403 NO_CONVOCADO);
+// el entrenador siempre puede.
+// Se comprueba antes de asegurarMatch para no crear en `matches` una fila
+// (con 0-0 por defecto) de un partido que no se ha jugado.
 app.post('/api/player-ratings/:matchId', async (req, res) => {
   const matchdayId = Number(req.params.matchId)
   const { ratings, mvpPlayerId } = req.body
@@ -1870,12 +2011,30 @@ app.post('/api/player-ratings/:matchId', async (req, res) => {
     return res.status(400).json({ error: 'Falta la lista de valoraciones.' })
   }
   try {
-    const user = await getUserByHeader(req)
-    if (!user) return res.status(401).json({ error: 'Falta identificar al usuario (X-User-Id).' })
+    const user = await getSessionUser(req)
+    if (!user) return responderSinSesion(res)
+
+    const m = await getMatchdayById(matchdayId)
+    if (!m) return res.status(404).json({ error: 'Jornada no encontrada.' })
+    if (m.status !== 'played') {
+      return res.status(409).json({ error: 'Solo se puede valorar un partido ya jugado.', code: 'NO_JUGADO' })
+    }
+    if (m.callup_status !== 'cerrada') {
+      return res.status(409).json({
+        error: 'La convocatoria final de este partido no está cerrada: no se sabe a quién valorar.',
+        code: 'CONVOCATORIA_NO_CERRADA',
+      })
+    }
+    const callUps = await getCallUpsDeJornada(m.id)
+    const convocados = new Set([...callUps.values()].filter((c) => c.called).map((c) => c.player_id))
+    if (user.role !== 'entrenador' && !convocados.has(user.player_id)) {
+      return res.status(403).json({
+        error: 'Solo pueden valorar el partido los jugadores convocados.',
+        code: 'NO_CONVOCADO',
+      })
+    }
 
     const matchId = await asegurarMatch(matchdayId)
-    const players = await fetchPlayersFromSupabase()
-    const knownPlayerIds = new Set(players.map((p) => p.id))
     const ratedBy = user.role === 'entrenador' ? 'entrenador' : 'companeros'
     const esUnoMismo = (playerId) => user.player_id && playerId === user.player_id
 
@@ -1883,7 +2042,7 @@ app.post('/api/player-ratings/:matchId', async (req, res) => {
     const toDelete = []
     for (const r of ratings) {
       const playerId = Number(r.playerId)
-      if (!knownPlayerIds.has(playerId) || esUnoMismo(playerId)) continue
+      if (!convocados.has(playerId) || esUnoMismo(playerId)) continue
       const valores = {}
       let alguno = false
       for (const c of CRITERIOS_RATING) {
@@ -1915,10 +2074,10 @@ app.post('/api/player-ratings/:matchId', async (req, res) => {
       if (error) throw new Error(error.message)
     }
 
-    // MVP: jugador conocido y distinto de uno mismo => upsert; en cualquier
-    // otro caso (null, inválido) se borra el voto de MVP de este usuario.
+    // MVP: convocado y distinto de uno mismo => upsert; en cualquier otro
+    // caso (null, inválido) se borra el voto de MVP de este usuario.
     const mvpId = Number(mvpPlayerId)
-    if (knownPlayerIds.has(mvpId) && !esUnoMismo(mvpId)) {
+    if (convocados.has(mvpId) && !esUnoMismo(mvpId)) {
       const { error } = await supabase
         .from('match_mvp_votes')
         .upsert(

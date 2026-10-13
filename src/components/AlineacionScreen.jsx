@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { fetchConvocatoriaHistory } from '../api'
+import { fetchConvocatoriaHistory, fetchProgresoValoraciones } from '../api'
 import { calculateAttendance } from '../utils/attendance'
 import LineupCard from './LineupCard'
 import RatingPanel from './RatingPanel'
@@ -69,6 +69,9 @@ export default function AlineacionScreen({
   currentUser,
   matchId,
   jugado = false,
+  // Si la convocatoria final está cerrada: sin ella el servidor rechaza las
+  // valoraciones (409 CONVOCATORIA_NO_CERRADA). null = aún consultándose.
+  convocatoriaCerrada = null,
   jornada,
   rival,
   // Estadísticas por partido (misma fuente que ya carga el padre para el
@@ -133,6 +136,43 @@ export default function AlineacionScreen({
     currentUser?.role === 'entrenador'
       ? convocadosDelPartido
       : convocadosDelPartido.filter((p) => p.id !== selfPlayerId)
+
+  // Un jugador solo puede valorar si fue convocado (el servidor lo rechaza
+  // con 403 NO_CONVOCADO); el entrenador siempre.
+  const esConvocadoOEntrenador =
+    currentUser?.role === 'entrenador' || convocadosDelPartido.some((p) => p.id === selfPlayerId)
+  const puedeValorar = jugado && convocatoriaCerrada === true && esConvocadoOEntrenador
+  const textoBotonValorar = !jugado
+    ? 'Disponible tras el partido'
+    : convocatoriaCerrada === null
+      ? 'Comprobando convocatoria…'
+      : !convocatoriaCerrada
+        ? 'Cierra la convocatoria para valorar'
+        : esConvocadoOEntrenador
+          ? 'Valorar partido'
+          : 'Solo pueden valorar los convocados'
+
+  // Cuántos convocados han valorado ya el partido (solo tiene sentido jugado y
+  // con la convocatoria cerrada). Se vuelve a pedir al volver del panel de
+  // valoración, para que cuente la que se acaba de guardar.
+  const [progreso, setProgreso] = useState(null)
+  useEffect(() => {
+    if (!jugado || convocatoriaCerrada !== true || !matchId || view !== 'lineup') return
+    let cancelado = false
+    fetchProgresoValoraciones(matchId)
+      .then((res) => !cancelado && setProgreso(res))
+      .catch(() => !cancelado && setProgreso(null))
+    return () => {
+      cancelado = true
+    }
+  }, [jugado, convocatoriaCerrada, matchId, view])
+
+  const textoProgreso = (() => {
+    if (!jugado || convocatoriaCerrada !== true) return 'Valoraciones · disponibles con el partido jugado y la convocatoria cerrada'
+    if (!progreso) return 'Valoraciones · cargando…'
+    const faltan = progreso.total - progreso.hechas
+    return `Valoraciones (${progreso.hechas}/${progreso.total}) · ${faltan === 0 ? 'todos han valorado' : `faltan ${faltan}`}`
+  })()
 
   const convocadoPlayers = useMemo(
     () => players.filter((p) => convocados.includes(p.id)),
@@ -336,16 +376,14 @@ export default function AlineacionScreen({
           <button
             type="button"
             className="al-rate-btn"
-            disabled={!jugado}
+            disabled={!puedeValorar}
             onClick={() => setView('rating')}
           >
-            {jugado ? 'Valorar partido' : 'Disponible tras el partido'}
+            {textoBotonValorar}
           </button>
         </div>
 
-        <p className="al-label">
-          Convocatoria ({convocadoPlayers.length}/{players.length})
-        </p>
+        <p className="al-label">{textoProgreso}</p>
         {/* <div className="al-chips">
           {players.map((p) => (
             <button

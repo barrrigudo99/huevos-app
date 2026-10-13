@@ -8,7 +8,7 @@ import PlayerProfileScreen from './components/PlayerProfileScreen'
 import MarcadorScreen from './components/MarcadorScreen'
 import StatsScreen from './components/StatsScreen'
 import { roleLabel } from './data/users'
-import { fetchPlayerMatchStats, fetchPlayers } from './api'
+import { SESSION_EXPIRED_EVENT, SESSION_KEY, fetchPlayerMatchStats, fetchPlayers } from './api'
 import useConvocatoria from './hooks/useConvocatoria'
 
 const TITLES = {
@@ -18,12 +18,13 @@ const TITLES = {
   stats: 'Estadísticas',
 }
 
-const SESSION_KEY = 'futbol7-session'
-
 export default function App() {
+  // Una sesión guardada sin token es de antes de la autenticación por token:
+  // ya no vale contra el servidor, así que se vuelve al login.
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem(SESSION_KEY)
-    return saved ? JSON.parse(saved) : null
+    const user = saved ? JSON.parse(saved) : null
+    return user?.token ? user : null
   })
   const [screen, setScreen] = useState('plantilla')
   const [players, setPlayers] = useState([])
@@ -70,6 +71,12 @@ export default function App() {
     localStorage.removeItem(SESSION_KEY)
     setCurrentUser(null)
   }
+
+  // El servidor ha rechazado el token (caducado o inválido): vuelta al login.
+  useEffect(() => {
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleLogout)
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleLogout)
+  }, [])
 
   if (!currentUser) {
     return <LoginScreen onLogin={handleLogin} />

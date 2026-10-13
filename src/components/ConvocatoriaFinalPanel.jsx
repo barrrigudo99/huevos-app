@@ -81,8 +81,7 @@ export default function ConvocatoriaFinalPanel({ matchId, players, currentUser, 
     try {
       const res = await saveConvocatoria(
         matchId,
-        { convocados: [...seleccion], enviarAlGrupo, confirmarEdicionJugado: conv.jugado },
-        currentUser.id
+        { convocados: [...seleccion], enviarAlGrupo, confirmarEdicionJugado: conv.jugado }
       )
       setConv(res)
       setSeleccion(new Set(res.jugadores.filter((j) => j.called).map((j) => j.playerId)))
@@ -102,7 +101,7 @@ export default function ConvocatoriaFinalPanel({ matchId, players, currentUser, 
     setSaveError('')
     setAviso('')
     try {
-      await reabrirConvocatoria(matchId, currentUser.id)
+      await reabrirConvocatoria(matchId)
       onChanged?.()
       setRecarga((n) => n + 1)
     } catch (err) {

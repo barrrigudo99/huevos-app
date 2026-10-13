@@ -4,9 +4,9 @@ import { markMatchAsPlayed } from '../api'
 // servidor responde CONVOCATORIA_NO_CERRADA: se avisa al entrenador y solo
 // se fuerza si lo confirma. Devuelve la respuesta del servidor, o null si el
 // entrenador cancela (no se ha marcado nada).
-export async function marcarJugadoConConfirmacion(matchId, userId) {
+export async function marcarJugadoConConfirmacion(matchId) {
   try {
-    return await markMatchAsPlayed(matchId, userId)
+    return await markMatchAsPlayed(matchId)
   } catch (err) {
     if (err.code !== 'CONVOCATORIA_NO_CERRADA') throw err
     const confirmado = window.confirm(
@@ -14,6 +14,6 @@ export async function marcarJugadoConConfirmacion(matchId, userId) {
         'asistencia hasta que la guardes desde Plantilla. ¿Marcarlo como jugado igualmente?'
     )
     if (!confirmado) return null
-    return markMatchAsPlayed(matchId, userId, { forzar: true })
+    return markMatchAsPlayed(matchId, { forzar: true })
   }
 }
